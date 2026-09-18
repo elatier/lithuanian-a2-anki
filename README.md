@@ -1,4 +1,4 @@
-# Lietuvių kalba A2 — Anki deck
+# Lithuanian A2 — Anki deck
 
 **1,593 Lithuanian words for the A2 state language exam**, with audio, stress
 marks (kirtis) and Lithuanian-language definitions.
