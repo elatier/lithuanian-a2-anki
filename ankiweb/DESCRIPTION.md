@@ -1,6 +1,6 @@
 <!-- AnkiWeb deck description: paste everything below this line into the Share form. -->
 
-**1,593 Lithuanian words for the A2 state language exam**, with audio, stress
+**1,596 Lithuanian words for the A2 state language exam**, with audio, stress
 marks and Lithuanian-language definitions.
 
 Deck page and source: https://github.com/elatier/lithuanian-a2-anki
@@ -16,7 +16,7 @@ Deck page and source: https://github.com/elatier/lithuanian-a2-anki
 
 ### What is in it
 
-- **1,593 words · 3,186 cards · 6,372 recordings**
+- **1,596 words · 3,192 cards · 6,384 recordings**
 - **Audio on everything** — the headword, its inflected forms, the Lithuanian
   definition and the example sentence. Four recordings per word.
 - **Stress marks (kirtis)** on headwords *and* on the inflected forms shown,

@@ -1,6 +1,6 @@
 # Lithuanian A2 — Anki deck
 
-**1,593 Lithuanian words for the A2 state language exam**, with audio, stress
+**1,596 Lithuanian words for the A2 state language exam**, with audio, stress
 marks (kirtis) and Lithuanian-language definitions.
 
 📄 **[Deck page](https://elatier.github.io/lithuanian-a2-anki/)** ·
@@ -8,9 +8,9 @@ marks (kirtis) and Lithuanian-language definitions.
 
 | | |
 |---|---|
-| Words | 1,593 |
-| Cards | 3,186 (two per word) |
-| Recordings | 6,372 |
+| Words | 1,596 |
+| Cards | 3,192 (two per word) |
+| Recordings | 6,384 |
 | Themes | 18 — the ministry's twelve A2 topics, plus six more |
 | Hand-checked paradigms | 469 |
 
@@ -54,8 +54,8 @@ that description does not name.
 
 | # | Theme | Words | | # | Theme | Words |
 |---|---|---|---|---|---|---|
-| 01 | Asmens tapatybė | 128 | | 10 | Prekyba | 113 |
-| 02 | Pastatai ir namai | 99 | | 11 | Maistas ir gėrimai | 121 |
+| 01 | Asmens tapatybė | 128 | | 10 | Prekyba | 114 |
+| 02 | Pastatai ir namai | 101 | | 11 | Maistas ir gėrimai | 121 |
 | 03 | Gamta, regionas | 108 | | 12 | Paslaugos | 43 |
 | 04 | Kasdienis gyvenimas | 118 | | 13 | Darbas ir profesijos | 27 |
 | 05 | Laisvalaikis | 124 | | 14 | Laikas ir orai | 59 |
@@ -108,7 +108,7 @@ No local setup at all: open the repo in a GitHub Codespace. The
 `.devcontainer/` gives you Python, hunspell, the dictionary and the Claude
 Code CLI in the browser.
 
-The 6,372 recordings (~115 MB) come with the clone, in `data/audio/`. Only
+The 6,384 recordings (~115 MB) come with the clone, in `data/audio/`. Only
 the clips for words you add or edit are ever recorded, and you commit them
 with the card. If you only want to build, `git clone --depth 1` skips the
 history and keeps the download small.
@@ -148,12 +148,11 @@ anything is recorded.
 - **With Claude Code:** `/add-word slėnis`, or `/add-word words.tsv` for a
   batch. The model drafts the cards, passes the gate, records, builds and
   commits, and ends with every card written out for you to read.
-- **Without:** three commands and the writing in between.
-  `python3 scripts/add_word.py slėnis --new --theme 03` prints a drafting
-  packet and scaffolds the row; you fill the four columns;
-  `python3 scripts/add_word.py slėnis` checks, records, builds and
-  refreshes the numbers. `--new --list words.tsv` and `--batch batch33`
-  do the same for a batch.
+- **Without:** write the row, then `python3 scripts/add_word.py slėnis`
+  checks, records, builds and refreshes the numbers. To have the row
+  started for you, run the same command before the row exists:
+  `--theme 03` prints a drafting packet and scaffolds it. `--list
+  words.tsv` and `--batch batch33` do the same for a batch.
 - **Nothing installed:** add the row on GitHub and open a pull request;
   CI runs the gate.
 
@@ -225,8 +224,8 @@ All in `scripts/`.
 | | |
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
-| `add_word.py` | the word workflow: `--new` prints the packet and scaffolds a row (`--list` a batch); a bare run checks, records, builds and refreshes the numbers |
-| `draft_packet.py` | the drafting packet on its own; `add_word.py --new` prints it |
+| `add_word.py` | the word workflow: for a word with no row it prints the packet and, with `--theme`, scaffolds the row (`--list` a batch); for a word with a row it checks, records, builds and refreshes the numbers |
+| `draft_packet.py` | the drafting packet on its own; `add_word.py` prints it for a new word |
 | `update_numbers.py` | rewrites the counts quoted in the README, deck page and AnkiWeb listing |
 | `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it; `--redo WORD` re-records a word whose clip sounds wrong |
 | `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD, THEME, ROOT |
@@ -264,7 +263,7 @@ All in `data/`.
 
 | | |
 |---|---|
-| `batches/batch*.tsv` | the 1,593 cards |
+| `batches/batch*.tsv` | the 1,596 cards |
 | `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
 | `THEMES.md` | the theme taxonomy; column 8 of every row names one of its slugs |
 | `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |

@@ -9,7 +9,7 @@ twelve topics of the ministry's *A2 kalbos mokėjimo turinio aprašas*
 (smsm.lrv.lt), in its order: Asmens tapatybė · Būstas · Gamta, regionas ·
 Kasdienis gyvenimas · Laisvalaikis · Kelionės · Santykiai su žmonėmis ·
 Sveikata ir higiena · Švietimas ir mokslas · Prekyba · Maistas ir gėrimai ·
-Paslaugos. They hold 1,275 of the 1,593 words.
+Paslaugos. They hold 1,278 of the 1,596 words.
 
 The six **`papildoma::` themes** were added by this deck because the catch-all
 bucket needed splitting; they have no counterpart in that description. They

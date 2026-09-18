@@ -95,16 +95,23 @@ has no script.
 ## Without Claude
 
 Yes, entirely. You write the four columns yourself; the scripts do
-everything else. Three steps: start the row, write it, finish it.
+everything else. Two steps: write the row, run the command. The command
+is the same one throughout, `add_word.py WORD`, and it does whatever the
+word needs next: for a word with no row it shows you what to write and can
+start the row for you; for a word with a row it checks, records and builds.
 
-### 1. Start
+### 1. Write the row
+
+Either write the whole line into a `data/batches/batch*.tsv` file yourself
+(tab-separated: `key lt_def en_word en_def lt_example en_example pos theme`),
+or let the script start it. Before the row exists,
 
 ```bash
-python3 scripts/add_word.py slėnis --new
+python3 scripts/add_word.py slėnis
 ```
 
 prints the drafting packet and, because no theme was given, the list of
-themes, and writes nothing. It looks like this:
+themes, and writes nothing:
 
 ```
 === žvakidė
@@ -124,50 +131,46 @@ themes, and writes nothing. It looks like this:
     02-pastatai-ir-namai       home, rooms, furniture, buildings, …
     …
 
---- 99 cards already in egzaminas::02-pastatai-ir-namai; the register to match:
-  antklodė   Lovoje ji yra ant mūsų, kad būtų šilta.   blanket   Žiemą reikia šiltos antklodės. …
-
 --- cards that already answer with one of these glosses …
 --- vocabulary: 1799 lemmas may appear in the definition and example …
 ```
 
-Pick the theme and run it again with it. Any unambiguous part of the slug
+Pick the theme and run it again with it; any unambiguous part of the slug
 will do:
 
 ```bash
-python3 scripts/add_word.py slėnis --new --theme 03
+python3 scripts/add_word.py slėnis --theme 03
 ```
 
 That appends a row to the newest batch file with the key, part of speech,
-theme and Wiktionary's first gloss filled in:
+theme and Wiktionary's first gloss filled in, and shows the theme's
+neighbouring cards so you can match their register:
 
 ```
 slėnis		valley				noun	03-gamta-regionas
 ```
 
 If Wiktionary lists the word under more than one part of speech, add
-`--pos noun` (or `verb`, `adj`). If the word already has a card, the
-script says so and writes nothing; edit that row instead.
+`--pos noun` (or `verb`, `adj`). A theme on a word that already has a row
+never adds a second one.
 
-### 2. Write
+Now fill the four empty columns. The [drafting
+guide](data/DRAFTING_GUIDE.md) has the register and the rules; the packet
+has the inflected forms and the words a definition may use. Change
+`en_word` if the first gloss is not the sense you are teaching; it must
+still be one of the Wiktionary glosses.
 
-Open the batch file and fill the four empty columns of the row. The
-[drafting guide](data/DRAFTING_GUIDE.md) has the register and the rules;
-the packet has the inflected forms, the neighbouring cards to match, and
-the words a definition may use. Change `en_word` if the first gloss is not
-the sense you are teaching; it must still be one of the Wiktionary glosses.
-
-### 3. Finish
+### 2. Run the command
 
 ```bash
 python3 scripts/add_word.py slėnis
 ```
 
-That runs the gate on the row. If it passes, it records the four clips,
-rebuilds the deck into `decks/`, and refreshes the counts in the README,
-the deck page and the AnkiWeb listing. If it fails, it prints what is
-wrong, records nothing, and you go back to step 2. To check without
-recording:
+Now that the row exists, this runs the gate on it. If it passes, it
+records the four clips, rebuilds the deck into `decks/`, and refreshes the
+counts in the README, the deck page and the AnkiWeb listing. If it fails,
+it prints what is wrong, records nothing, and you go back to the row. To
+check without recording:
 
 ```bash
 python3 scripts/add_word.py slėnis --no-audio
@@ -179,7 +182,7 @@ the docs.
 
 ### A batch of words
 
-The same three steps on a file. Put the words in `words.tsv`:
+The same two steps on a file. Put the words in `words.tsv`:
 
 ```
 lentyna	02
@@ -190,7 +193,7 @@ kirsti	04	verb
 Then:
 
 ```bash
-python3 scripts/add_word.py --new --list words.tsv
+python3 scripts/add_word.py --list words.tsv
 ```
 
 creates the next `data/batches/batchNN.tsv` with a prefilled row per word
@@ -237,6 +240,103 @@ clip that merely sounds wrong to be re-recorded:
 ```bash
 python3 scripts/resume_audio.py --redo WORD
 ```
+
+## A worked example
+
+Three words added by hand on 2026-09-19, exactly as above; this is the
+batch33 commit in the history. The list:
+
+```
+kvitas	10
+kopėčios	02
+jungiklis	02
+```
+
+Scaffolding it prints a compact packet per word and writes the rows:
+
+```
+$ python3 scripts/add_word.py --list out/words.tsv
+=== kvitas
+--- Wiktionary (via kaikki.org)
+  noun (daiktavardis) — headword kvi̇̀tas
+    glosses: receipt (an official certificate showing the delivery and receipt of money …)
+    forms line on the card: kvi̇̀tas / kvi̇̀tai
+    inflected forms for the example (use one of these, not the dictionary form):
+      kvitai (plural) · kvito (genitive singular) · kvitų (genitive plural)
+      kvitui (dative singular) · kvitams (dative plural) · kvitą (accusative singular)
+      …
+--- cards that already answer with one of these glosses (their definitions must stay distinguishable from yours):
+  čekis	receipt	Mažas popierius iš parduotuvės; rodo, kiek mokėjome.
+kvitas: row appended to batch33.tsv
+    kvitas		receipt				noun	10-prekyba
+…
+3 of 3 word(s) scaffolded into batch33.tsv. Write the columns, then:
+    python3 scripts/add_word.py --batch batch33
+```
+
+Two things in that packet shaped the writing: *kopėčios* is plural-only,
+so the forms line reads `kópėčios (tik dgs.)` and the example has to use a
+plural case; and *čekis* already answers "receipt", so the definition of
+*kvitas* had to be about a different receipt (a bank's or the post
+office's, not a shop's) or card 2 would have two right answers.
+
+The first draft of the four columns, and the gate's answer:
+
+```
+$ python3 scripts/add_word.py --batch batch33 --no-audio
+--- QA gate
+[WARN] jungiklis
+       A2: off-list vocabulary ['spaudžiame']
+[WARN] kopėčios
+       A2: off-list vocabulary ['aukštyn']
+[OK ] kvitas
+```
+
+Both warnings are the A2 rule: *spausti* is taught, but only its
+dictionary forms are known, so the first person *spaudžiame* is off-list;
+*aukštyn* is not taught at all. The two definitions were rewritten with
+words the deck has (*jį reikia spausti, kad lempa degtų*; *lipame į
+viršų*), and the gate passed. The final rows:
+
+```
+kvitas	Popierius; jis rodo, kad sumokėjai pinigus, pavyzdžiui, banke ar pašte.	receipt	A paper; it shows that you paid money, for example at the bank or the post office.	Banke man davė kvitą.	At the bank they gave me a receipt.	noun	10-prekyba
+kopėčios	Daiktas, kuriuo lipame į viršų, pavyzdžiui, prie stogo ar aukštos lentynos.	ladder	A thing we climb up on, for example to the roof or a high shelf.	Tėtis lipa kopėčiomis ant stogo.	Dad climbs the ladder onto the roof.	noun	02-pastatai-ir-namai
+jungiklis	Mažas daiktas ant sienos; jį reikia spausti, kad lempa degtų.	switch	A small thing on the wall; you press it to make the lamp light up.	Kur yra šviesos jungiklis?	Where is the light switch?	noun	02-pastatai-ir-namai
+```
+
+Then the finish, about half a minute:
+
+```
+$ python3 scripts/add_word.py --batch batch33
+--- QA gate
+[OK ] jungiklis
+[OK ] kopėčios
+[OK ] kvitas
+
+--- audio
+[00:32:01] 12 clip(s) to record; 6372 already done
+[00:32:03] POST   9 ch -> 200 in  1.43s, 9.7 KB  'jungiklis'
+[00:32:06] POST  22 ch -> 200 in  1.64s, 15.8 KB  'jungiklis , jungikliai'
+[00:32:08] POST  61 ch -> 200 in  0.31s, 36.6 KB  'Mažas daiktas ant sienos; jį reikia spausti, kad lempa degtų.'
+…
+[00:32:28] DONE — 12 new clip(s), nothing left to record
+
+--- build
+Wrote decks/lietuviu_A2.apkg: 1596 note(s), 3192 cards, 6384 media file(s), 18 deck(s).
+
+--- numbers
+  1,593 -> 1,596
+  3,186 -> 3,192
+  6,372 -> 6,384
+  1,275 -> 1,278
+updated: README.md, docs/index.html, ankiweb/DESCRIPTION.md, ankiweb/SHARE_FORM.md, data/THEMES.md
+
+Done. Commit the row(s), the new clips in data/audio/ (with .text_manifest.json), new files under data/cache/, and the docs.
+```
+
+What got committed: `data/batches/batch33.tsv`, twelve clips and the
+manifest in `data/audio/`, six lookup files under `data/cache/`, and the
+five documents with the new numbers.
 
 ## Without anything installed
 
