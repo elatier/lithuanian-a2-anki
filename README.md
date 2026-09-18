@@ -133,7 +133,9 @@ missing clips are left off their cards.
 ### Adding or changing a word
 
 1. **Write the card**: a row in a `data/batches/batch*.tsv` file, or a new
-   batch file. See [the card format](#the-card-format) below.
+   batch file. See [the card format](#the-card-format) below, and
+   [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md) for the style and the
+   rules the QA gate enforces.
 2. **Give it a theme**: list the headword under a theme heading in
    `data/a2_zodziai_v2.txt` (the themes are in `data/THEMES.md`).
 3. **Check it and record it**:
@@ -244,6 +246,7 @@ All in `data/`.
 | `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
 | `a2_zodziai_v2.txt` | the word list, grouped by theme; the source of the `tema::` tags |
 | `THEMES.md` | the theme taxonomy |
+| `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `cache/kaikki/`, `cache/wikt/` | every kaikki.org and Wiktionary lookup the build makes, so a build needs no network and does not drift as Wiktionary is edited. An empty file records that a word has no entry. |
