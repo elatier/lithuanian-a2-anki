@@ -18,4 +18,4 @@ select = ["E", "F", "W"]
 
 [tool.ruff.lint.per-file-ignores]
 # design history: CSS inside f-strings
-"scripts/themes*_candidates.py" = ["E501"]
+"scripts/design/themes*_candidates.py" = ["E501"]

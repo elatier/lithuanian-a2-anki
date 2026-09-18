@@ -1,40 +1,25 @@
 #!/usr/bin/env python3
-"""apply_accents.py — put stress marks on the hand-written paradigms.
+"""forms.py — the paradigms Wiktionary does not have: draft, check, accent.
 
-The paradigms in manual_forms.tsv were typed for words Wiktionary has no
-declension table for, and typed without stress marks — while the cards
-built from Wiktionary carry them on every form of the line (žibiñtas / žibiñtai).
-This closes the gap from sources that actually have the data, and refuses to
-invent the rest.
+A word with no Wiktionary inflection table gets a hand-written row in
+data/manual_forms.tsv (word, pos, forms line, all forms). Three steps:
 
-It accents EVERY form shown on the card, not just the headword: a line reading
-`ponià / ponios` is still half done. Column 4 of manual_forms.tsv — the form
-list used to match and bold the word inside example sentences — is deliberately
-left bare, because example text is written without marks and an accented entry
-there would simply never match.
+    python3 scripts/forms.py draft WORD POS     # a row for a regular word
+    python3 scripts/forms.py check [FILE]       # hunspell-verify every form
+    python3 scripts/forms.py accent [--dry-run] # stress marks on every shown form
 
-Two sources, in order:
-
-  1. accented.txt — produced by a human with VDU's Kirčiuoklis
-     (https://kalbu.vdu.lt/mokymosi-priemones/kirciuoklis/), the standard
-     Lithuanian accentuation tool. Paste in the contents of out/needs_accents.txt
-     (which lists whole paradigm lines, so the tool sees `megzti, mezga, mezgė`
-     as a verb rather than three loose words) and save the output here. Format
-     is free: the file is read as a bag of accented word forms, in any order,
-     newlines or not.
-
-  2. kaikki.org — the same source the rest of the deck uses. A word may have an
-     accented headword there even with no inflection table, which is exactly
-     the case for these words.
-
-Every candidate is checked before use: stripping the stress marks off it must
-give back exactly the form it replaces. Where a source offers two different
-accentuations for one spelling — `mes` is both mès and mẽs — the form is
-skipped and reported, because choosing would be guessing.
-
-    python3 scripts/apply_accents.py
-    python3 scripts/apply_accents.py --dry-run
+draft  detects the declension or conjugation from the ending and expands
+       it; paste the printed row into manual_forms.tsv. Every generated
+       form is then checked, so a wrong pattern is caught rather than
+       shipped; irregular words fail the check and are filled by hand.
+check  exits 1 and lists any form the lt_LT lexicon does not recognise.
+accent puts stress marks on every form printed on the card, from two
+       sources that actually have the data — data/accented.txt, produced
+       by a person with VDU's Kirčiuoklis, and kaikki.org — and refuses to
+       invent the rest: forms neither source has are listed in
+       out/needs_accents.txt for the next Kirčiuoklis round.
 """
+import argparse
 import json
 import re
 import sys
@@ -42,9 +27,87 @@ import unicodedata as u
 
 import ltcard
 import paths
+import spell
 
-MANUAL = paths.MANUAL_FORMS
-SUPPLIED = paths.ACCENTED
+# ------------------------------------------------------------------ draft --
+
+NOUN = {
+    "as":  ("as o ui ą u e", "ai ų ams us ais uose"),          # namas
+    "is":  ("is io iui į iu yje", "iai ių iams ius iais iuose"), # brolis
+    "ys":  ("ys io iui į iu yje", "iai ių iams ius iais iuose"), # arklys
+    "us":  ("us aus ui ų umi uje", "ūs ų ums us umis uose"),     # sūnus
+    "a":   ("a os ai ą a oje", "os ų oms as omis ose"),          # knyga
+    "ė":   ("ė ės ei ę e ėje", "ės ių ėms es ėmis ėse"),         # gėlė
+}
+VERB = {  # infinitive ending -> (pres3, past3) added to the stem
+    "yti": ("o", "ė"), "ėti": ("i", "ėjo"), "oti": ("oja", "ojo"),
+    "uoti": ("uoja", "avo"), "auti": ("auja", "avo"), "inti": ("ina", "ino"),
+}
+
+
+def draft_noun(word):
+    for end, (sg, pl) in NOUN.items():
+        if word.endswith(end):
+            stem = word[: -len(end)]
+            sgf = [stem + e for e in sg.split()]
+            plf = [stem + e for e in pl.split()]
+            return f"{sgf[0]} / {plf[0]}", sgf + plf
+    return None, None
+
+
+def draft_verb(word):
+    for end, (p3, t3) in VERB.items():
+        if word.endswith(end):
+            stem = word[: -len(end)]
+            pres = stem + p3            # rašyti -> rašo, mylėti -> myli
+            past = stem + t3
+            return f"{word}, {pres}, {past}", [word, pres, past]
+    return None, None
+
+
+def draft(word, pos):
+    """A manual_forms.tsv row for a regular word, or None."""
+    line, forms = draft_noun(word) if pos == "noun" else draft_verb(word)
+    if not line:
+        return None
+    return f"{word}\t{pos}\t{line}\t{' '.join(forms)}"
+
+
+# ------------------------------------------------------------------ check --
+
+# Real words missing from the hunspell lt_LT lexicon (verified against the
+# Pusiaukelė A2 word list, which lists them as required vocabulary). Both
+# decline fully regularly, so the paradigms are derived, not guessed.
+LEXICON_GAPS = {"skalbykl", "džiovykl", "keitykl", "atidarytuv"}
+
+
+def check(path=None):
+    """Forms in a manual_forms file that hunspell does not know."""
+    path = path or paths.MANUAL_FORMS
+    forms = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        cells = line.split("\t")
+        if line.strip() and not line.startswith("#") and len(cells) > 3:
+            forms += cells[3].split()
+    bad = sorted({w for w in spell.unknown_words("\n".join(forms))
+                  if not any(w.startswith(g) for g in LEXICON_GAPS)})
+    return forms, bad
+
+
+# ----------------------------------------------------------------- accent --
+# The paradigms in manual_forms.tsv were typed without stress marks, while
+# the cards built from Wiktionary carry them on every form of the line
+# (žibiñtas / žibiñtai). This closes the gap from sources that have the data.
+# It accents EVERY form shown on the card, not just the headword. Column 4
+# — the form list used to match and bold the word inside example sentences
+# — is deliberately left bare, because example text is written without
+# marks and an accented entry there would simply never match.
+#
+# Every candidate is checked before use: stripping the stress marks off it
+# must give back exactly the form it replaces. Where a source offers two
+# different accentuations for one spelling — `mes` is both mès and mẽs —
+# the form is skipped and reported, because choosing would be guessing.
+
 TODO = paths.OUT / "needs_accents.txt"
 
 # Grave, acute, tilde — the three Lithuanian stress marks, and nothing else.
@@ -107,16 +170,15 @@ def place(forms_line, form, accented):
     # The trailing guard must also reject a combining mark: `\w` does not
     # match U+0300, so a bare `taksi` would still match inside an already
     # accented `taksì` and stack a second mark onto it.
-    pattern = re.compile(r"(?<!\w)" + re.escape(form) + r"(?![\w\u0300-\u036f])",
+    pattern = re.compile(r"(?<!\w)" + re.escape(form) + r"(?![\ẁ-ͯ])",
                          re.UNICODE)
     new, n = pattern.subn(accented, forms_line)
     return new, bool(n)
 
 
-def main():
-    dry = "--dry-run" in sys.argv
-    supplied = from_file(SUPPLIED)
-    lines = MANUAL.read_text(encoding="utf-8").splitlines()
+def accent(dry=False):
+    supplied = from_file(paths.ACCENTED)
+    lines = paths.MANUAL_FORMS.read_text(encoding="utf-8").splitlines()
     filled, ambiguous, rejected, disagree = [], {}, [], []
     rows_done = rows_partial = 0
     todo_lines, todo_forms = [], set()
@@ -180,7 +242,7 @@ def main():
             rows_done += 1
 
     if not dry:
-        MANUAL.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        paths.MANUAL_FORMS.write_text("\n".join(lines) + "\n", encoding="utf-8")
         TODO.parent.mkdir(exist_ok=True)
         TODO.write_text(
             "# Paradigms that still have unaccented forms — EVERY form printed\n"
@@ -189,7 +251,7 @@ def main():
             "# Paste everything below the comments into VDU's Kirciuoklis\n"
             "#   https://kalbu.vdu.lt/mokymosi-priemones/kirciuoklis/\n"
             "# save its output as data/accented.txt, then rerun\n"
-            "#   python3 scripts/apply_accents.py\n"
+            "#   python3 scripts/forms.py accent\n"
             "#\n"
             "# Whole paradigm lines are given rather than loose words so the\n"
             "# tool can tell a verb form from a same-spelled noun. The output\n"
@@ -218,7 +280,41 @@ def main():
     if not dry:
         print(f"\n{len(todo_lines)} paradigm line(s) to run through Kirciuoklis "
               f"-> {TODO}")
+    return 0
+
+
+# ------------------------------------------------------------------- main --
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    d = sub.add_parser("draft", help="a manual_forms.tsv row for a regular word")
+    d.add_argument("word")
+    d.add_argument("pos", choices=["noun", "verb"])
+    c = sub.add_parser("check", help="hunspell-verify every form")
+    c.add_argument("file", nargs="?")
+    a = sub.add_parser("accent", help="stress marks on every form shown")
+    a.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args(argv)
+
+    if args.cmd == "draft":
+        row = draft(args.word, args.pos)
+        if not row:
+            print(f"# no pattern matched for {args.word} ({args.pos}) — "
+                  f"fill by hand", file=sys.stderr)
+            return 1
+        print(row)
+        return 0
+    if args.cmd == "check":
+        from pathlib import Path
+        forms, bad = check(Path(args.file) if args.file else None)
+        print(f"{len(forms)} forms checked; {len(bad)} unknown to hunspell")
+        if bad:
+            print("UNKNOWN:", bad)
+            return 1
+        return 0
+    return accent(args.dry_run)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

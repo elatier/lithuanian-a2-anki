@@ -116,3 +116,38 @@ def test_head_catches_a_mis_parsed_forms_line(gate, monkeypatch):
                         forms={"kelionė", "kelionės", "kelionę"})})
     hard, out = gate()
     assert hard and "HEAD: forms line looks mis-parsed" in out
+
+
+def test_root_warns_on_a_same_root_word_but_does_not_fail(gate):
+    hard, out = gate(lt_def="Ilgas keliavimas į kitą šalį.")
+    assert not hard and "ROOT: definition shares a root with the headword: keliavimas" in out
+    assert not gate(lt_def="Ilga išvyka į kitą šalį.")[1].count("ROOT:")
+
+
+def test_shared_root_folds_alternations_and_finds_compound_stems():
+    assert verify_defs.shared_root("augalas", "auga")
+    assert verify_defs.shared_root("senamiestis", "miesto")
+    assert verify_defs.shared_root("valgyti", "valgis")
+    assert verify_defs.shared_root("mokytojas", "mokykla")
+    assert not verify_defs.shared_root("kelionė", "išvyka")
+    assert not verify_defs.shared_root("namas", "ir")
+    # a known false positive, which is why ROOT is a warning with a
+    # reviewed list rather than a failure
+    assert verify_defs.shared_root("pavardė", "pavadinimas")
+
+
+def test_reviewed_root_hits_are_not_reported(gate, monkeypatch):
+    verify_defs.root_reviewed.cache_clear()
+    monkeypatch.setattr(verify_defs, "root_reviewed",
+                        lambda: {("kelionė", "keliavimas")})
+    hard, out = gate(lt_def="Ilgas keliavimas į kitą šalį.")
+    assert not hard and "ROOT:" not in out
+
+
+def test_known_vocabulary_holds_every_form_of_every_headword(no_network):
+    known = verify_defs.known_vocabulary()
+    assert {"kelionė", "kelionėje", "kelionių"} <= known      # Wiktionary word
+    assert {"ponia", "poniomis"} <= known                     # manual_forms word
+    assert {"šuns", "mėnesį"} <= known                        # forms_cache.json
+    assert "nes" in known and "vilnius" not in known          # function words only
+    assert "ekstravagantiška" not in known

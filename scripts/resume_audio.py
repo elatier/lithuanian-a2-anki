@@ -16,8 +16,13 @@ build_single.sh runs this before building, so you rarely need it directly.
 
     python3 scripts/resume_audio.py                               # every batch
     python3 scripts/resume_audio.py data/batches/batch12.tsv      # just one
+    python3 scripts/resume_audio.py --redo kasa oda               # re-record these
 
+--redo deletes the words' clips first, so they are recorded afresh. You
+normally do not need it: a clip whose text changed is re-recorded anyway.
+Use it when a clip sounds wrong.
 """
+import argparse
 import hashlib
 import json
 import sys
@@ -143,6 +148,32 @@ def record(todo, man, engine="liepa", voice="astra"):
     return 0
 
 
+def invalidate(words):
+    """Delete the clips of `words` and forget them in the manifest, so the
+    next run records them afresh. Returns the deleted clip names."""
+    words = set(words)
+    manual = ltcard.load_manual_forms()
+    man = load_manifest()
+    gone = []
+    for f in paths.batch_files():
+        for key, d in ltcard.load_defs(str(f)).items():
+            head = d.get("headword") or key.split("#")[0]
+            if head not in words:
+                continue
+            kind = (manual[head]["pos"] if head in manual
+                    else (d.get("pos") or "noun"))
+            h = hashlib.md5(
+                f"{key}:{kind}:{ltcard.AUDIO_TAG}".encode()).hexdigest()[:8]
+            for suf in ("w", "f", "d", "e"):
+                p = MEDIA / f"lt_{h}_{suf}.mp3"
+                if p.exists():
+                    p.unlink()
+                    man.pop(p.name, None)
+                    gone.append(p.name)
+    save_manifest(man)
+    return gone
+
+
 def main(files, engine="liepa", voice="astra", quiet=False):
     ltcard.AUDIO_LOG = log          # trace every HTTP attempt into this log
     if not quiet:
@@ -162,5 +193,12 @@ def main(files, engine="liepa", voice="astra", quiet=False):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:] or [str(p) for p in paths.batch_files()]
-    sys.exit(main(args))
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("files", nargs="*", help="batch files (default: all)")
+    ap.add_argument("--redo", nargs="+", metavar="WORD",
+                    help="delete these words' clips first, then record")
+    a = ap.parse_args()
+    if a.redo:
+        gone = invalidate(a.redo)
+        log(f"deleted {len(gone)} clip(s) for {len(a.redo)} word(s); recording afresh")
+    sys.exit(main(a.files or [str(p) for p in paths.batch_files()]))

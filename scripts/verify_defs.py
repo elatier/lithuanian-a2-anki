@@ -9,10 +9,16 @@ Checks per word (no human input needed):
              Wiktionary glosses (independent, verifiable source)
   3. LEAK    definition contains no inflected form of the headword
   4. FORM    example contains at least one inflected form of the headword
-  5. A2      definition+example vocabulary stays inside the approved
-             A2 list (forms_cache.json) + function words
+  5. A2      definition+example vocabulary stays inside the deck's own
+             words (every inflected form, from the cached Wiktionary
+             entries, manual_forms.tsv and forms_cache.json) + function
+             words + the documented extras in extra_def_vocab.tsv
   6. LEN     definition is short enough for A2 (warn > 12 tokens)
   7. THEME   column 8 names a theme from data/THEMES.md
+  8. ROOT    definition shares no root with the headword (warn: a
+             derivation like augalas ~ auga gives card 2 away, but a
+             shared prefix is not a shared root, so this is for review;
+             a hit judged harmless is listed in root_reviewed.tsv)
 
 Also writes out/review.txt: word | draft def | Wiktionary glosses | EN —
 side by side, so human spot-checking a sample takes seconds per word.
@@ -21,16 +27,16 @@ Usage: python3 scripts/verify_defs.py                            # every batch
        python3 scripts/verify_defs.py data/batches/batch32.tsv   # just one
 Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM/QUAL/HEAD/THEME) fails.
 """
+import functools
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 import ltcard
 import paths
 import spell
-
-CACHE = paths.FORMS_CACHE
 
 # The gate used to check only what a human wrote (definition, example,
 # translation) and never the GENERATED parts of a card — the headword as it is
@@ -127,31 +133,104 @@ def spell_unknown(text, headword_forms=frozenset()):
                    and (not w[0].isupper() or w.lower() not in proper)})
 
 
+# ---- ROOT: a definition that shares a root with its headword ------------
+# Exact inflected forms are LEAK; this is the weaker, still card-breaking
+# case of a derivationally related word (mokytojas -> mokykla, gėlė ->
+# gėlių, valgyti -> valgis) in the definition. Heuristic: longest common
+# prefix after folding the consonant/vowel alternations that break a naive
+# prefix match, plus a compound's embedded stem (senamiestis ~ miesto).
+
+_FOLD = str.maketrans({"č": "t", "ę": "e", "ė": "e", "į": "i",
+                       "ų": "u", "ū": "u", "y": "i", "š": "s", "ž": "z",
+                       "ą": "a", "o": "a"})
+
+
+def _norm(w):
+    w = unicodedata.normalize("NFC", ltcard.strip_stress(w).lower())
+    return w.replace("dž", "d").translate(_FOLD)
+
+
+def shared_root(head, tok):
+    """Shared root length if `tok` looks derivationally related to `head`,
+    else 0."""
+    h, t = _norm(head), _norm(tok)
+    if len(t) < 3:
+        return 0
+    n = 0
+    for x, y in zip(h, t):
+        if x != y:
+            break
+        n += 1
+    if n >= 4 and (n >= 0.6 * len(h) or n >= 0.6 * len(t)):
+        return n
+    if n >= 5:
+        return n
+    for k in range(len(t), 3, -1):          # embedded stem of a compound
+        if t[:k] in h:
+            return k
+    return 0
+
+
+@functools.lru_cache(maxsize=1)
+def known_vocabulary():
+    """Every word form a definition or example may use.
+
+    The deck's own vocabulary: each headword and all its inflected forms,
+    from the cached Wiktionary entries (data/cache/kaikki) or from
+    manual_forms.tsv for the words Wiktionary has no table for, so a new
+    word's forms count as soon as its card exists; the paradigms in
+    forms_cache.json, fetched for the original A2 word list, which hold
+    fuller tables for some words than the caches do now and a few words
+    the definitions use but the deck no longer teaches; the grammar words
+    in function_words.txt; and the documented extras in
+    extra_def_vocab.tsv — words allowed inside definitions but not taught
+    as cards, because the A2-only restriction made ~20 synonym pairs
+    mutually ambiguous on the definition->word card.
+    """
+    known = ltcard.load_word_set(paths.FUNCTION_WORDS)
+    if paths.FORMS_CACHE.exists():
+        cache = json.load(open(paths.FORMS_CACHE, encoding="utf-8"))
+        known |= set(cache) | {f for v in cache.values() for f in v}
+    manual = ltcard.load_manual_forms()
+    for f in paths.batch_files():
+        for key in ltcard.load_defs(str(f)):
+            head = key.split("#")[0]
+            known.add(head)
+            if head in manual:
+                known |= manual[head]["forms"]
+            else:
+                entries = ltcard.kaikki_entries(head)
+                for pos in ltcard.POSES:
+                    known |= ltcard.all_word_forms(entries, pos)
+    for m in manual.values():
+        known |= m["forms"]
+    extra = paths.EXTRA_DEF_VOCAB
+    if extra.exists():
+        for line in extra.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                lemma, _, forms = line.partition("\t")
+                known.add(lemma.strip().lower())
+                known |= {f.lower() for f in forms.split()}
+    return known
+
+
+@functools.lru_cache(maxsize=1)
+def root_reviewed():
+    """{(key, token)} ROOT hits a person has judged harmless."""
+    out = set()
+    if paths.ROOT_REVIEWED.exists():
+        for line in paths.ROOT_REVIEWED.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                key, _, rest = line.partition("\t")
+                out.add((key.strip(), rest.split("\t")[0].strip().lower()))
+    return out
+
+
 def check(path):
     """Print the report for one batch; return (hard_fail, review entries)."""
     defs = ltcard.load_defs(path)
-    known = None
-    if CACHE.exists():
-        cache = json.load(open(CACHE, encoding="utf-8"))
-        known = set(cache) | {f for v in cache.values() for f in v}
-        known |= ltcard.load_word_set(paths.FUNCTION_WORDS)
-        # 219 A2 lemmas have no Wiktionary table, so forms_cache holds only
-        # their bare nominative and every inflected use looked "off-list".
-        # manual_forms.tsv now carries hunspell-verified paradigms for all of
-        # them — fold those in so the gate stops rejecting approved vocabulary.
-        for _m in ltcard.load_manual_forms().values():
-            known |= _m["forms"]
-        # Vocabulary allowed inside definitions but not taught as cards. The
-        # A2-only restriction made ~20 synonym pairs mutually ambiguous on the
-        # definition->word card; extra_def_vocab.tsv holds the deliberate,
-        # documented exceptions that buy distinctness. See that file's header.
-        extra = paths.EXTRA_DEF_VOCAB
-        if extra.exists():
-            for _line in extra.read_text(encoding="utf-8").splitlines():
-                if _line.strip() and not _line.startswith("#"):
-                    _lemma, _, _forms = _line.partition("\t")
-                    known.add(_lemma.strip().lower())
-                    known |= {f.lower() for f in _forms.split()}
+    known = known_vocabulary()
+    reviewed = root_reviewed()
     hard_fail = False
     review = []
     manual = ltcard.load_manual_forms()
@@ -253,6 +332,14 @@ def check(path):
             if hit:
                 problems.append(f"QUAL: definition contains the "
                                 f"disambiguating word {hit}")
+
+        # ROOT: a same-root word in the definition (review, not a failure)
+        shared = [f"{t} (+{n})" for t in ltcard.tokenize(d["lt_def"])
+                  for n in [shared_root(head, t)]
+                  if n and (word, t.lower()) not in reviewed]
+        if shared:
+            problems.append(f"ROOT: definition shares a root with the "
+                            f"headword: {', '.join(shared)}")
 
         # THEME: the row's theme must be one of the taxonomy's slugs
         if not d.get("theme"):

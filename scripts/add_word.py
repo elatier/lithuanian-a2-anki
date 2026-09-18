@@ -17,7 +17,7 @@ Finish it:
 
     python3 scripts/add_word.py lentyna
 
-runs the QA gate and the root-leak check on the word's rows, records the
+runs the QA gate on the word's rows, records the
 clips that are missing or whose text changed (four per card, a few seconds
 each), rebuilds the deck and refreshes the numbers in the docs. Nothing is
 recorded while a hard check fails, so a typo never costs a recording. Then
@@ -50,7 +50,6 @@ import draft_packet
 import ltcard
 import paths
 import resume_audio
-import root_leak
 import update_numbers
 import verify_defs
 
@@ -197,12 +196,10 @@ def finish(words, no_audio=False, no_build=False):
 
         print("\n--- QA gate")
         hard_fail, _review = verify_defs.check(str(tsv))
-        print("\n--- root leak")
-        root_leak.main([str(tsv)])
         if hard_fail or problems:
             print("\nFix the problems above and rerun; no audio recorded.")
             print("No inflection table? Draft one with "
-                  "`python3 scripts/gen_forms.py WORD POS` into "
+                  "`python3 scripts/forms.py draft WORD POS` into "
                   "data/manual_forms.tsv.")
             return 1
         if no_audio:

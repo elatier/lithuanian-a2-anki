@@ -18,7 +18,6 @@ A word not yet in the caches costs one kaikki.org and one Wiktionary lookup;
 the answers are cached under data/cache/ for the build.
 """
 import argparse
-import json
 import re
 import sys
 
@@ -29,9 +28,10 @@ POS_NAMES = {"noun": "daiktavardis", "verb": "veiksmažodis", "adj": "būdvardis
 
 
 def known_lemmas():
-    lemmas = set()
-    if paths.FORMS_CACHE.exists():
-        lemmas |= set(json.load(open(paths.FORMS_CACHE, encoding="utf-8")))
+    """The lemmas a definition may use: the deck's headwords, the grammar
+    words and the documented extras (their inflected forms count too)."""
+    lemmas = {k.split("#")[0] for f in paths.batch_files()
+              for k in ltcard.load_defs(str(f))}
     lemmas |= set(ltcard.load_manual_forms())
     if paths.EXTRA_DEF_VOCAB.exists():
         for line in paths.EXTRA_DEF_VOCAB.read_text(encoding="utf-8").splitlines():
@@ -98,7 +98,7 @@ def packet(word, theme=None, vocab=False, next_steps=True):
     if not entries:
         p("  no entry. The GLOSS check cannot verify a translation; if there "
           "is no inflection table either, the word needs a manual_forms.tsv "
-          "row (gen_forms.py).")
+          "row (forms.py draft).")
     other = sorted({e.get("pos") for e in entries} - ltcard.POSES - {None})
     if other:
         p(f"  entries for other parts of speech: {', '.join(other)} "
@@ -116,8 +116,8 @@ def packet(word, theme=None, vocab=False, next_steps=True):
               + ("   [manual_forms.tsv]" if word in manual else ""))
         else:
             p("    NO INFLECTION TABLE on Wiktionary: write the paradigm "
-              "into manual_forms.tsv (gen_forms.py, check_forms.py, "
-              "apply_accents.py) before the gate will pass.")
+              "into manual_forms.tsv (forms.py draft / check / accent) "
+              "before the gate will pass.")
         forms = []
         for e in entries:
             if e.get("pos") != pos:

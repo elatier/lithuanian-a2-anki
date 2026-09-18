@@ -1,0 +1,38 @@
+# ROOT hits a person has judged harmless: the definition shares a root
+# with the headword, but the relation is one a learner sees through
+# (a nationality from its country, a compound from its parts), so the
+# card is not given away. One line per hit: key, token, note.
+# The gate reports every other ROOT hit as a warning.
+#
+# key	token	note
+pavardė	vardas	accepted when the root check joined the gate (2026-09-19)
+gimtadienis	Diena	accepted when the root check joined the gate (2026-09-19)
+lietuvis	Lietuvos	accepted when the root check joined the gate (2026-09-19)
+parduoti	Duoti	accepted when the root check joined the gate (2026-09-19)
+vairuoti	vairo	accepted when the root check joined the gate (2026-09-19)
+pagalvė	galva	accepted when the root check joined the gate (2026-09-19)
+senamiestis	Sena	accepted when the root check joined the gate (2026-09-19)
+senamiestis	miesto	accepted when the root check joined the gate (2026-09-19)
+vairuotojas	vairuoja	accepted when the root check joined the gate (2026-09-19)
+kraujospūdis	kraujas	accepted when the root check joined the gate (2026-09-19)
+odontologas	dantis	accepted when the root check joined the gate (2026-09-19)
+padaryti	Daryti	accepted when the root check joined the gate (2026-09-19)
+arbatinukas	arbatą	accepted when the root check joined the gate (2026-09-19)
+atidarytuvas	atidarome	accepted when the root check joined the gate (2026-09-19)
+atiduoti	Duoti	accepted when the root check joined the gate (2026-09-19)
+bulgaras	Bulgarijos	accepted when the root check joined the gate (2026-09-19)
+dainininkas	dainuoti	accepted when the root check joined the gate (2026-09-19)
+debesuotas	debesų	accepted when the root check joined the gate (2026-09-19)
+ispanas	Ispanijos	accepted when the root check joined the gate (2026-09-19)
+ispanė	Ispanijos	accepted when the root check joined the gate (2026-09-19)
+japonas	Japonijos	accepted when the root check joined the gate (2026-09-19)
+paroda	rodomi	accepted when the root check joined the gate (2026-09-19)
+rumunas	Rumunijos	accepted when the root check joined the gate (2026-09-19)
+suomis	Suomijos	accepted when the root check joined the gate (2026-09-19)
+susitikimas	susitaria	accepted when the root check joined the gate (2026-09-19)
+ukrainietis	Ukrainos	accepted when the root check joined the gate (2026-09-19)
+vokietis	Vokietijos	accepted when the root check joined the gate (2026-09-19)
+vokietė	Vokietijos	accepted when the root check joined the gate (2026-09-19)
+švedas	Švedijos	accepted when the root check joined the gate (2026-09-19)
+keturi	turi	accepted when the root check joined the gate (2026-09-19)
+penkiasdešimt	šimto	accepted when the root check joined the gate (2026-09-19)

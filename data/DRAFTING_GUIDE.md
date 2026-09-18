@@ -15,8 +15,8 @@ prints the drafting packet and fills in everything but the four text
 columns.
 
 `[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD, THEME) must be fixed.
-`[WARN]` (LEN, A2, ORDER) should be fixed if it is easy, and is acceptable if
-it is not.
+`[WARN]` (LEN, A2, ORDER, ROOT) should be fixed if it is easy, and is
+acceptable if it is not.
 
 ## The register
 
@@ -45,16 +45,19 @@ Real cards from the deck:
    away just as badly: `augalas` defined as "tai, kas **auga**", `skalbyklė`
    as "mašina, kuri **skalbia**". For compounds this includes their parts:
    do not define `prieškambaris` with **kambarys**, or `senamiestis` with
-   **miesto**. `add_word.py` runs the root-leak check. Its hits are for
-   review, not automatic failures: a shared prefix (`pavardė` /
-   `pavadinimas`) is not a shared root.
+   **miesto**. The gate's ROOT warning flags these for review; it is not
+   a failure, because a shared prefix (`pavardė` / `pavadinimas`) is not a
+   shared root. A hit you have judged harmless goes into
+   `root_reviewed.tsv` so it is not reported again.
 
 3. **A2 vocabulary only.** Every Lithuanian word in `lt_def` and
-   `lt_example` should be A2 vocabulary. That means a form in
-   `forms_cache.json` or `manual_forms.tsv`, a grammar word in
-   `function_words.txt`, a documented exception in `extra_def_vocab.tsv`,
-   or a proper noun in `proper_nouns.txt`. Anything else is an A2 warning.
-   Capitalising a word at the start of a sentence does not excuse it.
+   `lt_example` should be A2 vocabulary: any inflected form of a word the
+   deck teaches (from its Wiktionary entry, `manual_forms.tsv` or
+   `forms_cache.json`), a
+   grammar word in `function_words.txt`, a documented exception in
+   `extra_def_vocab.tsv`, or a proper noun in `proper_nouns.txt`. Anything
+   else is an A2 warning. Capitalising a word at the start of a sentence
+   does not excuse it.
 
 4. **The example contains an inflected form of the headword**, and
    preferably not the dictionary form: `Vaikai sėdi ant žolės.`, not

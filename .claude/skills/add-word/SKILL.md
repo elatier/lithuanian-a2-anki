@@ -58,8 +58,8 @@ word.
   qualifier in column 9, keep the primary sense on the bare key — README,
   "The card format").
 - **No inflection table**: the paradigm goes in `data/manual_forms.tsv`.
-  Draft it with `gen_forms.py WORD POS`, run `check_forms.py`, then
-  `apply_accents.py`. Stress marks that neither source has must come from
+  Draft it with `forms.py draft WORD POS`, run `forms.py check`, then
+  `forms.py accent`. Stress marks that neither source has must come from
   the VDU Kirčiuoklis; the script writes `out/needs_accents.txt` for the
   user to paste there. Say so, and never invent an accent.
 
@@ -90,8 +90,9 @@ the packet. In short:
 ```
 
 Fix every `[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD, THEME) and every
-`[WARN]` that is easy (LEN, A2, ORDER). Root-leak hits are for judgement:
-a shared prefix is not a shared root. Rerun after each edit. When it is
+`[WARN]` that is easy (LEN, A2, ORDER, ROOT). ROOT is for judgement: a
+shared prefix is not a shared root; a hit you judge harmless goes into
+`data/root_reviewed.tsv` with a note. Rerun after each edit. When it is
 clean, drop `--no-audio`:
 
 ```bash

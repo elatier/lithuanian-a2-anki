@@ -16,9 +16,10 @@ DATA = ROOT / "data"
 BATCHES = DATA / "batches"
 
 MANUAL_FORMS = DATA / "manual_forms.tsv"
-FORMS_CACHE = DATA / "forms_cache.json"
 THEMES_MD = DATA / "THEMES.md"       # the theme taxonomy; column 8 of a row names one
 EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
+FORMS_CACHE = DATA / "forms_cache.json"      # paradigms of the original word list
+ROOT_REVIEWED = DATA / "root_reviewed.tsv"   # ROOT hits judged harmless
 HUNSPELL = DATA / "hunspell"        # lt_LT.aff + lt_LT.dic, BSD (see COPYING)
 ACCENTED = DATA / "accented.txt"
 FUNCTION_WORDS = DATA / "function_words.txt"

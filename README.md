@@ -161,7 +161,7 @@ Codespace.
 2. **Write** `lt_def`, `en_def`, `lt_example`, `en_example` in the row,
    following [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md).
 3. **Finish.** `python3 scripts/add_word.py slėnis` checks the row (the QA
-   gate and the root-leak check), records its four clips, rebuilds the deck
+   gate), records its four clips, rebuilds the deck
    and refreshes the numbers in the docs. Nothing is recorded while a check
    fails; `--no-audio` only checks. Then commit the row, the clips in
    `data/audio/` (with `.text_manifest.json`), any new files under
@@ -189,9 +189,9 @@ read-through.
 If the QA gate reports no inflection table, Wiktionary has none for the word.
 Write its paradigm into `data/manual_forms.tsv` instead:
 
-1. `python3 scripts/gen_forms.py WORD POS` drafts the line for a regular word.
-2. `python3 scripts/check_forms.py` spell-checks every form.
-3. `python3 scripts/apply_accents.py` adds the stress marks.
+1. `python3 scripts/forms.py draft WORD POS` prints the row for a regular word.
+2. `python3 scripts/forms.py check` spell-checks every form.
+3. `python3 scripts/forms.py accent` adds the stress marks.
 
 Before a release, `python3 scripts/verify_defs.py` with no arguments checks
 every batch. Every push runs the same checks on GitHub Actions: lint, the
@@ -264,18 +264,12 @@ All in `scripts/`.
 | `add_word.py` | the word workflow: `--new` prints the packet and scaffolds a row (`--list` a batch); a bare run checks, records, builds and refreshes the numbers |
 | `draft_packet.py` | the drafting packet on its own; `add_word.py --new` prints it |
 | `update_numbers.py` | rewrites the counts quoted in the README, deck page and AnkiWeb listing |
-| `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |
-| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD, THEME |
-| `root_leak.py` | catches definitions that share a root with their headword |
-| `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
-| `gen_forms.py` | drafts a `manual_forms.tsv` line for a regular word |
-| `apply_accents.py` | places stress marks on headwords and every displayed form |
-| `scan_forms_lines.py` | audits the inflection line on every card |
-| `invalidate_audio.py` | forces specific words to be re-recorded, e.g. when a clip sounds wrong |
-| `build_cache.py` | pre-fetches Wiktionary paradigms into `forms_cache.json` |
+| `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it; `--redo WORD` re-records a word whose clip sounds wrong |
+| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD, THEME, ROOT |
+| `forms.py` | the paradigms Wiktionary lacks: `draft WORD POS` a row, `check` every form with hunspell, `accent` the stress marks |
 | `ltcard.py` | the card builder library: note type, templates, CSS, Wiktionary lookups, TTS |
 | `paths.py`, `spell.py` | file locations; the hunspell wrapper |
-| `theme_preview.py`, `themes*_candidates.py`, `pron_preview.py` | design history: render real cards under candidate stylings; how the current theme was chosen |
+| `design/` | design history: render real cards under candidate stylings; how the current theme was chosen |
 
 ### Tests
 
@@ -310,14 +304,15 @@ All in `data/`.
 | `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
 | `THEMES.md` | the theme taxonomy; column 8 of every row names one of its slugs |
 | `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |
+| `forms_cache.json` | Wiktionary paradigms fetched for the original A2 word list; the gate counts them as known vocabulary |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
+| `root_reviewed.tsv` | ROOT hits a person has judged harmless, so the gate stops reporting them |
 | `function_words.txt` | grammar words that always count as known A2 vocabulary |
 | `proper_nouns.txt` | names that may open a sentence without failing SPELL or A2 |
 | `gloss_overrides.tsv` | translations the GLOSS check accepts on trust, each with its reason |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `cache/kaikki/`, `cache/wikt/` | every kaikki.org and Wiktionary lookup the build makes, so a build needs no network and does not drift as Wiktionary is edited. An empty file records that a word has no entry. |
 | `audio/` | the recordings, four per card, and `.text_manifest.json`, which records what each clip says so that edited text is re-recorded |
-| `forms_cache.json` | cached Wiktionary paradigms used by the QA gate |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
 | `hunspell/` | the `lt_LT` spelling dictionary the QA gate runs, with its licence |
 

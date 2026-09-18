@@ -58,3 +58,5 @@
 !release.sh
 !.devcontainer/
 !.devcontainer/*.json
+!scripts/design/
+!scripts/design/*.py
