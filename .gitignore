@@ -49,3 +49,6 @@
 !pyproject.toml
 !.github/
 !.github/**
+!.claude/
+!.claude/skills/
+!.claude/skills/**

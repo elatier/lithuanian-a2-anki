@@ -132,6 +132,18 @@ missing clips are left off their cards.
 
 ### Adding or changing a word
 
+In Claude Code, `/add-word lentyna` walks these steps with the model
+drafting the card, and stops for your approval before anything is recorded
+(the skill is `.claude/skills/add-word/`). By hand:
+
+0. **Start from the packet**: `python3 scripts/draft_packet.py lentyna`
+   prints what Wiktionary says the word means and how it inflects, the
+   theme it belongs to and how that theme's cards read, the cards that
+   already share its English answer, and the vocabulary a definition may
+   use. Then `python3 scripts/add_word.py lentyna --new --pos noun --theme 02`
+   appends a row with the key, gloss and part of speech filled in and lists
+   the word under the theme, so steps 1 and 2 are only the four columns of
+   text.
 1. **Write the card**: a row in a `data/batches/batch*.tsv` file, or a new
    batch file. See [the card format](#the-card-format) below, and
    [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md) for the style and the
@@ -149,10 +161,12 @@ missing clips are left off their cards.
    that are new or whose text changed: four per card, a few seconds each.
    Nothing is recorded while a check fails. Pass several words at once, or
    `--no-audio` to only check.
-4. **Build**: `./build_single.sh`.
+4. **Build**: `./build_single.sh`, then `python3 scripts/update_numbers.py`
+   to bring the counts in this README, the deck page and the AnkiWeb
+   listing up to date.
 5. **Commit** the card, its new clips in `data/audio/` (including
-   `.text_manifest.json`), and any new files under `data/cache/`: the
-   dictionary lookups for the new word.
+   `.text_manifest.json`), any new files under `data/cache/` (the
+   dictionary lookups for the new word), and the updated docs.
 
 If the QA gate reports no inflection table, Wiktionary has none for the word.
 Write its paradigm into `data/manual_forms.tsv` instead:
@@ -206,6 +220,7 @@ data/audio/       the recordings, ~115 MB
 docs/             the deck page (GitHub Pages)
 ankiweb/          the AnkiWeb listing: description and Share-form fields
 .github/          CI, the release workflow, the correction issue template
+.claude/skills/   the /add-word skill for Claude Code
 pyproject.toml    pytest and ruff configuration
 ```
 
@@ -220,7 +235,9 @@ All in `scripts/`.
 | | |
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
-| `add_word.py` | checks new or edited words and records only their audio |
+| `add_word.py` | checks new or edited words and records only their audio; `--new` scaffolds a row |
+| `draft_packet.py` | everything a drafter needs to write one card, on one screen |
+| `update_numbers.py` | rewrites the counts quoted in the README, deck page and AnkiWeb listing |
 | `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |
 | `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD |
 | `root_leak.py` | catches definitions that share a root with their headword |

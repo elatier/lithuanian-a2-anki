@@ -2,26 +2,15 @@
 theme taxonomy are derived from the data here, so adding or moving a card
 without updating them fails this file rather than shipping a stale claim."""
 import re
-from collections import Counter
 
 import ltcard
 import paths
+import update_numbers
 
 ROOT = paths.ROOT
 
 
-def facts():
-    themes = ltcard.load_themes()
-    notes, per_theme = 0, Counter()
-    for f in paths.batch_files():
-        for key in ltcard.load_defs(str(f)):
-            notes += 1
-            slug = themes.get(key.split("#")[0], "be-temos")
-            per_theme[int(slug.rsplit("::", 1)[-1][:2])] += 1
-    return dict(notes=notes, cards=2 * notes,
-                recordings=len(list(paths.MEDIA.glob("*.mp3"))),
-                paradigms=len(ltcard.load_manual_forms()),
-                per_theme=per_theme)
+facts = update_numbers.facts
 
 
 def n(x):
@@ -67,7 +56,11 @@ def test_ankiweb_listing_numbers():
 
 def test_theme_taxonomy_split():
     f = facts()
-    exam = sum(f["per_theme"][i] for i in range(1, 13))
     text = (paths.DATA / "THEMES.md").read_text(encoding="utf-8")
-    assert f"They hold {n(exam)} of the {n(f['notes'])} words" in text
-    assert f"hold the remaining {n(f['notes'] - exam)}" in text
+    assert f"They hold {n(f['exam'])} of the {n(f['notes'])} words" in text
+    assert f"hold the remaining {n(f['extra'])}" in text
+
+
+def test_update_numbers_agrees_with_these_tests(capsys):
+    """The fixer and the checks read the same spots: nothing to update."""
+    assert update_numbers.main(check=True) == 0
