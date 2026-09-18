@@ -170,12 +170,8 @@ docs/             the deck page (GitHub Pages)
 ```
 
 The scripts find their files through `scripts/paths.py`, so they can be run
-from any directory. The local caches are gitignored and live in the repo
-root:
-
-- `media_tmp/`: the audio
-- `kaikki_cache/` and `wikt_cache/`: dictionary lookups
-- `decks/`: the built decks
+from any directory. Two things are local and gitignored: the audio in
+`media_tmp/`, and the built decks in `decks/`.
 
 ### What the scripts do
 
@@ -210,7 +206,8 @@ All in `data/`.
 | `THEMES.md` | the theme taxonomy |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
-| `forms_cache.json` | cached Wiktionary paradigms, so a build needs no network for known words |
+| `cache/kaikki/`, `cache/wikt/` | every kaikki.org and Wiktionary lookup the build makes, so a build needs no network and does not drift as Wiktionary is edited. An empty file records that a word has no entry. |
+| `forms_cache.json` | cached Wiktionary paradigms used by the QA gate |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
 
 ## Licence and reuse
@@ -221,7 +218,8 @@ work and may be reused freely with attribution.
 The **scripts** in this repo are MIT-licensed — see `LICENSE`.
 
 **Inflected forms and glosses** are derived from **English Wiktionary**, which
-is CC BY-SA. That covers `forms_cache.json` and the paradigm columns.
+is CC BY-SA. That covers `forms_cache.json`, `data/cache/` and the paradigm
+columns.
 
 **The audio** was generated with the Lithuanian speech synthesiser operated by
 **UAB Intelektika** (`sinteze.intelektika.lt`, now `snekos-sinteze.lt`), voice

@@ -2,10 +2,10 @@
 
     data/            deck source, tracked
     data/batches/    batch*.tsv, one row per card
-    media_tmp/       cached audio clips        (local, gitignored)
-    kaikki_cache/    cached kaikki.org lookups (local, gitignored)
-    wikt_cache/      cached Wiktionary pages   (local, gitignored)
-    decks/           built .apkg files         (local, gitignored)
+    data/cache/      kaikki.org and Wiktionary lookups, tracked so a build
+                     is reproducible and needs no network
+    media_tmp/       cached audio clips  (local, gitignored; fetch_audio.py)
+    decks/           built .apkg files   (local, gitignored)
 """
 from pathlib import Path
 
@@ -20,8 +20,8 @@ EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
 ACCENTED = DATA / "accented.txt"
 
 MEDIA = ROOT / "media_tmp"
-KAIKKI_CACHE = ROOT / "kaikki_cache"
-WIKT_CACHE = ROOT / "wikt_cache"
+KAIKKI_CACHE = DATA / "cache" / "kaikki"
+WIKT_CACHE = DATA / "cache" / "wikt"
 DECKS = ROOT / "decks"
 
 

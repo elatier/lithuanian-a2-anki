@@ -29,3 +29,8 @@
 !data/*.md
 !data/batches/
 !data/batches/*.tsv
+!data/cache/
+!data/cache/kaikki/
+!data/cache/kaikki/*.jsonl
+!data/cache/wikt/
+!data/cache/wikt/*.html
