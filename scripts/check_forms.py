@@ -21,4 +21,5 @@ bad = sorted({w for w in spell.unknown_words("\n".join(forms))
               if not any(w.startswith(g) for g in LEXICON_GAPS)})
 print(f"{len(forms)} forms checked; {len(bad)} unknown to hunspell")
 if bad:
-    print("UNKNOWN:", bad); sys.exit(1)
+    print("UNKNOWN:", bad)
+    sys.exit(1)

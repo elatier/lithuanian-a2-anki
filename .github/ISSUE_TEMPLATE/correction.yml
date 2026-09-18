@@ -1,0 +1,44 @@
+name: Card correction
+description: A definition, example, translation, form or recording that is wrong.
+title: "[word]: "
+labels: [correction]
+body:
+  - type: input
+    id: word
+    attributes:
+      label: Word
+      description: The headword as it appears on the card.
+      placeholder: slėnis
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: What is wrong
+      options:
+        - Lithuanian definition
+        - Example sentence
+        - English translation
+        - Inflected forms or stress marks
+        - Audio
+        - Theme or tag
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What the card says, and why it is wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested fix
+      description: Optional. The wording you would use instead.
+  - type: dropdown
+    id: speaker
+    attributes:
+      label: Are you a native speaker of Lithuanian?
+      options: ["Yes", "No"]

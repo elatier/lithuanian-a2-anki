@@ -1,0 +1,13 @@
+# Proper nouns the cards may use, in every inflected form that occurs.
+# A capitalised word at the START of a sentence is only excused from the
+# SPELL and A2 checks if it is on this list; mid-sentence capitals are
+# taken as names anyway. Lowercase, any layout; `#` starts a comment.
+amerika amerikoje amerikos ameriką dievas dievo dievu europa
+europoje europos europą gedimino jonas jono jonui joną
+kalėdas kalėdos kalėdų katedra katedros kaunas kaune kauno
+kauną kazlauskas kazlauskienė klaipėda klaipėdoje klaipėdos latvija latvijoje
+latvijos latviją lenkija lenkijoje lenkijos lenkiją lietuva lietuvoje
+lietuvos lietuvą londonas londone londono londoną nemunas nemune
+nemuno nemuną olandija olandijoje olandijos ona onos oną
+petraitis rūta rūtos rūtą seimas seime seimo tomas
+tomo tomą vilniaus vilniuje vilnius vilnių

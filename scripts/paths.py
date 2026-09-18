@@ -7,6 +7,7 @@
     data/audio/      the recorded clips and .text_manifest.json, tracked so
                      nobody re-records what is already recorded
     decks/           built .apkg files   (local, gitignored)
+    out/             review.txt, needs_accents.txt, previews (local, gitignored)
 """
 from pathlib import Path
 
@@ -19,11 +20,15 @@ FORMS_CACHE = DATA / "forms_cache.json"
 THEME_FILE = DATA / "a2_zodziai_v2.txt"
 EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
 ACCENTED = DATA / "accented.txt"
+FUNCTION_WORDS = DATA / "function_words.txt"
+PROPER_NOUNS = DATA / "proper_nouns.txt"
+GLOSS_OVERRIDES = DATA / "gloss_overrides.tsv"
 
 MEDIA = DATA / "audio"
 KAIKKI_CACHE = DATA / "cache" / "kaikki"
 WIKT_CACHE = DATA / "cache" / "wikt"
 DECKS = ROOT / "decks"
+OUT = ROOT / "out"
 
 
 def batch_num(path):

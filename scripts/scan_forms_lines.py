@@ -8,7 +8,6 @@ where the cache lives.
 """
 import re
 import sys
-from pathlib import Path
 import ltcard
 import paths
 

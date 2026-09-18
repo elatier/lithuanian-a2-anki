@@ -1,0 +1,28 @@
+# Tag a commit vX.Y.Z and push the tag: the deck is built offline and
+# attached to a GitHub release of that tag, so the "latest release" link on
+# the deck page always points at a build of tagged source.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Offline build
+        run: ./build_single.sh --no-fetch
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: decks/lietuviu_A2.apkg
+          generate_release_notes: true

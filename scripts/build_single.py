@@ -22,7 +22,6 @@ the synthesiser.
 """
 import argparse
 import hashlib
-import json
 import re
 import sys
 from pathlib import Path
@@ -72,7 +71,6 @@ def main():
                          "batch = a subdeck per batch; none = one flat deck")
     ap.add_argument("--voice", default="astra")
     ap.add_argument("--engine", choices=["liepa", "edge"], default="liepa")
-    ap.add_argument("--cache", default=str(paths.FORMS_CACHE))
     ap.add_argument("--no-fetch", action="store_true",
                     help="do not contact the synthesiser at all; cards whose "
                          "clips are missing are still built, just without "
@@ -99,16 +97,6 @@ def main():
         # records only what is missing or out of date; usually nothing
         audio_incomplete = resume_audio.main(
             files, engine=args.engine, voice=args.voice, quiet=True) != 0
-    ltcard.make_audio = lambda *a, **k: None
-
-    known = None
-    if Path(args.cache).exists():
-        cache = json.load(open(args.cache, encoding="utf-8"))
-        known = set()
-        for w, forms in cache.items():
-            known.add(w)
-            known.update(forms)
-        known |= ltcard.FUNCTION_WORDS
 
     media_dir = paths.MEDIA
     media_dir.mkdir(exist_ok=True)
@@ -122,9 +110,12 @@ def main():
         print(f"=== {path.name} ({len(defs)} card(s))", flush=True)
         for key in defs:
             try:
+                # every clip is already recorded (or deliberately skipped),
+                # so the builder is handed a synthesiser that does nothing
                 ltcard.process_word(key, args.voice, media_dir, defs, notes,
                                     media, errors, engine=args.engine,
-                                    known=known, extra_tags=[tag])
+                                    extra_tags=[tag],
+                                    tts=lambda *a, **k: None)
             except Exception as exc:
                 errors.append(f"{key}: error — {exc}")
         for note in notes:

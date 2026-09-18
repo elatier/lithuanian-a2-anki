@@ -1,0 +1,36 @@
+# Runs on every push and pull request: lint, the test suite, the QA gate over
+# every batch, and an offline build of the whole deck. The build needs no
+# network — every lookup and every recording is in the repo — so a green run
+# means a clean clone rebuilds the released deck.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install hunspell with the Lithuanian dictionary
+        run: sudo apt-get update -q && sudo apt-get install -y -q hunspell hunspell-lt
+      - run: pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check scripts tests
+      - name: Tests
+        run: python -m pytest
+      - name: QA gate over every batch
+        run: python scripts/verify_defs.py
+      - name: Offline build
+        run: ./build_single.sh --no-fetch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lietuviu_A2.apkg
+          path: decks/lietuviu_A2.apkg
+          retention-days: 14

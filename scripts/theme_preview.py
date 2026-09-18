@@ -17,15 +17,14 @@ import paths
 
 # which module supplies THEMES, and where the pages go
 _mod = sys.argv[1] if len(sys.argv) > 1 else "themes_candidates"
-_out = sys.argv[2] if len(sys.argv) > 2 else "preview"
+_out = sys.argv[2] if len(sys.argv) > 2 else str(paths.OUT / "preview")
 TC = __import__(_mod)
 
 WORDS = ["vaistinė", "traukinys", "aš"]
 
 
 def build_notes():
-    ltcard.make_audio = lambda *a, **k: None
-    notes, media, errors = [], [], []
+    media, errors = [], []
     media_dir = paths.MEDIA
     media_dir.mkdir(exist_ok=True)
     out = {}
@@ -110,7 +109,7 @@ def main():
     if len(notes) < len(WORDS):
         sys.exit(f"only built {len(notes)} of {len(WORDS)} sample notes")
     outdir = Path(_out)
-    outdir.mkdir(exist_ok=True)
+    outdir.mkdir(parents=True, exist_ok=True)
     for name, css in TC.THEMES.items():
         body = []
         for note, word in zip(notes, WORDS):

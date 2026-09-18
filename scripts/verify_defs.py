@@ -13,8 +13,8 @@ Checks per word (no human input needed):
              A2 list (forms_cache.json) + function words
   6. LEN     definition is short enough for A2 (warn > 12 tokens)
 
-Also writes review.txt (repo root): word | draft def | Wiktionary glosses |
-EN — side by side, so human spot-checking a sample takes seconds per word.
+Also writes out/review.txt: word | draft def | Wiktionary glosses | EN —
+side by side, so human spot-checking a sample takes seconds per word.
 
 Usage: python3 scripts/verify_defs.py                            # every batch
        python3 scripts/verify_defs.py data/batches/batch32.tsv   # just one
@@ -94,159 +94,10 @@ def head_problems(key, d, manual):
         out.append("HEAD: empty forms line")
     return out
 
-# Documented exceptions where the Wiktionary gloss is deficient
-GLOSS_OVERRIDES = {"berniukas": "boy",        # Wikt: only 'lad; dim. of bernas'
-                   "svetainė": "living room", # Wikt: 'parlor, guest room' — dated
-                   "praustis": "to wash", "šukuotis": "to comb one's hair",
-                   "rengtis": "to get dressed", "pabusti": "to wake up",
-                   "darželis": "kindergarten", "pertrauka": "break",
-                   "kabinetas": "office", "termometras": "thermometer",
-                   # Senses that ARE on Wiktionary but sit outside the first
-                   # four glosses that wikt_gloss() reads, so the gate cannot
-                   # see them. Each verified in the kaikki entry:
-                   "šokti": "dance",      # verb sense 5 'dance (move in rhythm to music)'
-                   "kasa": "cash desk",   # 2nd noun etymology, 'cash register'
-                   "narys": "member",     # noun sense 7 'member (person who belongs...)'
-                   "pažymys": "grade",    # Wiktionary entry has a full declension
-                                          # table but its sense is tagged no-gloss,
-                                          # so NO translation can ever anchor
-                   "auklė": "nanny",      # Wiktionary glosses 'nannie, nurse' —
-                                          # 'nannie' is the archaic spelling of the
-                                          # same sense; 'nurse' is slaugytoja
-                   "kilimas": "carpet",   # 2nd noun etymology; wikt_gloss reads
-                                          # only the first, which is 'rising up'
-                   "valdymas": "governance",  # senses[*].glosses[1] is
-                                          # 'governance, rule'; wikt_gloss reads
-                                          # only glosses[0], a form-of pointer
-                   "žvakutė": "candle",   # sense 2 is 'diminutive of žvakė',
-                                          # and žvakė glosses exactly 'candle'
-                   "režisierius": "film director",  # sole gloss is the ambiguous
-                                          # 'director', already used by another
-                                          # card; same sense, disambiguated
-                   # Deficient glosses: the sense is right but Wiktionary's
-                   # wording cannot be matched by a substring test. Each
-                   # checked against the kaikki entry.
-                   "danė": "Danish woman",     # Wikt: 'Dane (female from Denmark)'
-                   "ispanė": "Spanish woman",  # Wikt: 'Spaniard (female from Spain)'
-                   "vokietė": "German woman",  # Wikt: 'a woman from Germany'
-                   "čekė": "Czech woman",      # Wikt: 'Czech (female from Czechia)'
-                   "teisininkas": "lawyer",    # Wikt: 'jurist, legal scholar'
-                   "manyti": "to think",       # Wikt: only 'to deem'
-                   "aikštelė": "playground",   # Wikt: 'field, pad, site'
-                   "žiedas#ring": "ring",      # Wikt noun lists only blossom/flower
-                   "žibintas#auto": "headlight",   # Wikt: only 'lantern'
-                   "besmegenis#snow": "snowman",   # Wikt has only the adjective
-                   "lipti#climb": "to climb",  # 2nd verb etymology;
-                                          # wikt_gloss reads only the first
-                   # Senses genuinely ABSENT from Wiktionary, approved for
-                   # the deck because the attested alternative made a poor card
-                   "apžiūrėti": "to examine",  # Wikt: only 'to survey, to view'
-                   "atskiras": "separate",     # Wikt: only 'isolated, dedicated'
-                   "lipdyti": "to mould",      # Wikt: only 'to create by sticking'
-                   # ---- review pass: translations deliberately narrowed ----
-                   # Each of these replaces a gloss the review found wrong,
-                   # ambiguous, or colliding with another card's answer. The
-                   # Wiktionary gloss is quoted; the change is the point.
-                   "ponas": "Mr; sir",         # 'sir' misused before a surname
-                   "žmogus": "person; human",  # 'a good human' is not English
-                   "mama": "mom",              # 'mother' collided with motina
-                   "vaikinas": "young man; guy",   # 'guy' alone is slangier
-                   "krosnelė": "stove",        # re-cut to the wood-burning sense
-                   "keltis": "to get up",      # Wikt 'to rise'; daily-routine sense
-                   "praustis": "to wash (oneself)",  # was 'to wash' — see skalbti
-                   "šaltis": "cold (weather)",  # 'frost' is šalna/šerkšnas
-                   "prašymas": "application",   # the written-paper sense
-                   "išmokti": "to learn (master)",  # aspect pair with mokytis
-                   "vagonas": "carriage (railway car)",   # 'wagon' is a cart
-                   "reisas": "flight, trip",    # def also covers bus journeys
-                   "eiti": "to go (on foot)",   # 'to walk' undersells it
-                   "pasienis": "border area",   # 'borderland' is literary
-                   "pildyti": "to fill in (a form)",   # not filling a container
-                   "kariauti": "to wage war",   # 'to battle' too narrow
-                   "pavargti": "to get tired",  # 'to tire' reads transitive
-                   "skalbti": "to wash (clothes)",     # collided with plauti
-                   "ligonis": "sick person",    # 'patient' belongs to pacientas
-                   "kursas": "year (of study)",  # 'course' contradicted the def
-                   "kirpti": "to cut (with scissors)",  # 'to clip' wrong for hair
-                   "sesija": "exam session",    # bare 'session' collided
-                   "pardavėjas": "shop assistant",     # 'salesman' is gendered
-                   "laikrodis": "clock/watch",  # one LT word covers both
-                   "papuošalas": "piece of jewellery",  # ornaments aren't worn
-                   "švarkas": "suit jacket",    # 'jacket' collided with striukė
-                   "taurė": "wine glass",       # 'cup' collided with puodukas
-                   "kiaušinienė": "fried eggs",  # def says 'be pieno'
-                   "atrodyti": "to look (like)",  # this sense is look, not seem
-                   "avėti": "to wear (footwear)",      # vs dėvėti for clothes
-                   "barščiai": "beetroot soup",  # deck's other cards say this
-                   "giminė": "relatives",       # 'family' belongs to šeima
-                   "estė": "Estonian woman",    # matches danė / vokietė pattern
-                   "graikė": "Greek woman",     # same pattern
-                   "forma": "shape",            # def is about round/long/square
-                   "japonas": "Japanese man",   # bare 'Japanese' is the adjective
-                   "jautis": "ox, bull",        # jautis is the ox; bulius is bull
-                   "keletas": "a few, several",  # 'a couple' implies two
-                   "kūrinys": "work, piece",    # 'creation' is not idiomatic
-                   "linksniuotė": "declension (class)",  # vs linksniavimas
-                   "ožys": "billy goat",        # 'goat' collided with ožka
-                   "posėdis": "meeting (formal)",      # 'session' is not English
-                   "prašyti": "to ask for",     # vs klausti, 'to ask'
-                   "skara": "headscarf",        # 'scarf' collided with šalikas
-                   "skyrius": "chapter",        # a titled part of a book
-                   "tarnautojas": "clerk",      # 'employee' is darbuotojas
-                   "vainikas": "wreath",        # worn on the head, not a garland
-                   "valdymas": "rule",          # 'governance' is above the level
-                   "šiukšlės": "rubbish, trash",       # 'litter' is scattered
-                   "žibintas": "street lamp",   # the bare card is the street one
-                   "remontas": "renovation",    # walls painted, windows changed
-                   "centras": "centre",        # British spelling, as the
-                                               # example sentence already used
-                   # ---- batch31. Each gloss is deliberate; the
-                   # Wiktionary wording is quoted where it differs.
-                   "nulis": "zero",            # Wiktionary has no gloss at all
-                   "atsiprašyti": "to apologise",   # Wikt: US spelling only
-                   "pora": "couple",           # Wikt: 'pair'
-                   "žaidėjas": "player (in sport)",  # 'player' alone collides
-                   "tirpti": "to melt",        # sense sits past wikt_gloss n=4
-                   "gaminti": "to cook",       # Wikt: 'to produce; to prepare'
-                   "raidė": "letter (of the alphabet)",  # vs laiškas
-                   "kantrus": "patient (able to wait)",  # vs the noun pacientas
-                   "nemokamas": "free (of charge)",      # Wikt: 'free of charge'
-                   }   # words absent from Wiktionary -> gloss unverifiable
-
-PRONOUNS = {"mano", "tavo", "jo", "jos", "man", "tau", "jam", "jai",
-            "mums", "jums", "jiems", "joms", "mus", "jus", "juos", "jas",
-            "jūsų", "mūsų", "jį", "ją", "kurį", "kurią", "kuriuo", "kuria",
-            "kuriam", "kuriai", "kituose", "kitam", "kitą", "kitos", "kito",
-            # personal pronouns: previously only passed when capitalised at the
-            # start of a sentence, which pushed drafts into awkward word order
-            "aš", "tu", "mes", "jūs", "mane", "tave", "manęs", "tavęs",
-            "sau", "save", "jų", "juose", "jose", "jomis", "jais",
-            "manimi", "tavimi",
-            "juo", "ja", "jame", "joje", "šiuo", "šia", "šiame", "šioje",
-            "šią", "tuo", "tame", "toje", "tą"}
-
-# Capitalisation alone no longer excuses a word from the SPELL and A2 checks.
-# A capital is treated as meaningful only mid-sentence, where it cannot be an
-# artefact of sentence position — or for a name on this explicit list, which
-# is the only way a proper noun can open a sentence. Add to it deliberately.
-PROPER_NOUNS = {
-    "vilnius", "vilniaus", "vilniuje", "vilnių",
-    "kaunas", "kauno", "kaune", "kauną",
-    "klaipėda", "klaipėdos", "klaipėdoje",
-    "lietuva", "lietuvos", "lietuvoje", "lietuvą",
-    "latvija", "latvijos", "latvijoje", "latviją",
-    "lenkija", "lenkijos", "lenkijoje", "lenkiją",
-    "europa", "europos", "europoje", "europą",
-    "amerika", "amerikos", "amerikoje", "ameriką",
-    "londonas", "londono", "londone", "londoną",
-    "olandija", "olandijos", "olandijoje",
-    "nemunas", "nemuno", "nemune", "nemuną",
-    "gedimino", "katedros", "katedra", "seimas", "seime", "seimo",
-    "kalėdos", "kalėdas", "kalėdų", "dievas", "dievu", "dievo",
-    "jonas", "jono", "jonui", "joną", "tomas", "tomo", "tomą",
-    "ona", "onos", "oną", "rūta", "rūtos", "rūtą",
-    "petraitis", "kazlauskienė", "kazlauskas",
-}
+# Proper nouns are data/proper_nouns.txt; the words that always count as
+# known A2 vocabulary are data/function_words.txt; the accepted translations
+# the GLOSS check cannot verify are data/gloss_overrides.tsv.
+PROPER_NOUNS = ltcard.load_word_set(paths.PROPER_NOUNS)
 
 SENT = re.compile(r"(?<=[.!?])\s+")
 
@@ -282,7 +133,7 @@ def check(path):
     if CACHE.exists():
         cache = json.load(open(CACHE, encoding="utf-8"))
         known = set(cache) | {f for v in cache.values() for f in v}
-        known |= ltcard.FUNCTION_WORDS
+        known |= ltcard.load_word_set(paths.FUNCTION_WORDS)
         # 219 A2 lemmas have no Wiktionary table, so forms_cache holds only
         # their bare nominative and every inflected use looked "off-list".
         # manual_forms.tsv now carries hunspell-verified paradigms for all of
@@ -303,6 +154,7 @@ def check(path):
     hard_fail = False
     review = []
     manual = ltcard.load_manual_forms()
+    overrides = ltcard.load_gloss_overrides()
     for word, d in defs.items():
         # `word` may be a keyed sense variant (`žibintas#auto`); every
         # linguistic lookup uses the bare headword.
@@ -333,7 +185,7 @@ def check(path):
             glosses = "(manual forms — no Wiktionary entry; "\
                       "translation relies on spot-check)"
         enw = d["en_word"].lower().replace("to ", "")
-        ov = GLOSS_OVERRIDES.get(word, GLOSS_OVERRIDES.get(head))
+        ov = overrides.get(word, overrides.get(head))
         if ov is not None:
             # normalise the override the same way enw was, or a capitalised
             # or "to "-prefixed override can never match and silently falls
@@ -376,7 +228,7 @@ def check(path):
             raw = d["lt_def"] + " " + d["lt_example"]
             capitalized = meaningful_caps(raw)
             def is_known(t):
-                if t in known or t in forms or t in PRONOUNS:
+                if t in known or t in forms:
                     return True
                 if t in capitalized:          # proper nouns / sentence names
                     return True
@@ -431,7 +283,8 @@ def main(files):
         review += rev
         if bad:
             failed.append(Path(f).name)
-    out = paths.ROOT / "review.txt"
+    out = paths.OUT / "review.txt"
+    out.parent.mkdir(exist_ok=True)
     out.write_text("\n".join(review), encoding="utf-8")
     print(f"\n{out.name} written ({len(review)} words).")
     if failed:

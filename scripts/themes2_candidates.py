@@ -38,7 +38,8 @@ def build(*, accent, accent_night, rule, forms_rule, banner=False):
         color: #2b2620; background: #fdfaf2; line-height: 1.5; }}
 
 .word    {{ font-size: 35px; font-weight: 700; color: #1f1b16;
-           letter-spacing: -.005em; {'padding: 10px 0 12px; margin: 0 0 4px; border-bottom: 1px solid #eadfc4;' if banner else ''} }}
+           letter-spacing: -.005em;
+           {'padding: 10px 0 12px; margin: 0 0 4px; border-bottom: 1px solid #eadfc4;' if banner else ''} }}
 .qual    {{ font-weight: 400; color: #9a9284; }}
 .forms   {{ font-size: 19px; color: #6a6255; margin: 6px 0; }}
 .forms-q {{ font-size: 23px; font-weight: 600; color: #4a4335; margin: 12px 0;

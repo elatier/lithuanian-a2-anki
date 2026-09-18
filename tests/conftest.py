@@ -2,16 +2,12 @@
 through a fake, and time.sleep is recorded instead of slept."""
 import base64
 import json
-import sys
 import time
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-
-import ltcard  # noqa: E402
-import paths  # noqa: E402
+import ltcard      # scripts/ is on sys.path via pyproject.toml [tool.pytest]
+import paths
 
 MP3 = b"ID3\x04\x00\x00\x00\x00\x00\x00" + b"\x00" * 400
 
@@ -75,8 +71,3 @@ def no_network(monkeypatch):
     monkeypatch.setattr(ltcard.requests, "get", refuse)
     monkeypatch.setattr(ltcard.requests, "post", refuse)
 
-
-def pytest_configure(config):
-    # genanki's dependency, not ours
-    config.addinivalue_line(
-        "filterwarnings", "ignore::DeprecationWarning:cached_property")

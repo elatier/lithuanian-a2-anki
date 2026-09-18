@@ -71,14 +71,10 @@ def clips_for(defs_path):
     """
     defs = ltcard.load_defs(defs_path)
     jobs = []
-    real = ltcard.make_audio
-    ltcard.make_audio = lambda text, path, *a, **k: jobs.append(
-        (text, Path(path)))
-    try:
-        for key in defs:
-            ltcard.process_word(key, "astra", MEDIA, defs, [], [], [])
-    finally:
-        ltcard.make_audio = real
+    for key in defs:
+        ltcard.process_word(key, "astra", MEDIA, defs, [], [], [],
+                            tts=lambda text, path, *a, **k: jobs.append(
+                                (text, Path(path))))
     return jobs
 
 

@@ -1,0 +1,29 @@
+# Grammar words that count as known A2 vocabulary inside definitions and
+# examples without being taught as cards: forms of būti, conjunctions,
+# prepositions, pronouns in every case, common adverbs and connectors.
+# Most are from Pusiaukelė ch. 4 (abstrakčiosios sąvokos); the rest were
+# added when the A2 gate flagged them repeatedly in otherwise good
+# definitions. Lowercase, any layout; `#` starts a comment.
+anksti ant apie aplink arba atgal aukščiau aš
+be bet blogai bus buvo būti dabar dar
+daug dažnai dėl esi esu gali gana gerai
+greitai iki iš ja jai jais jam jame
+jas jau ji jie jiems jis jo joje
+jomis joms jos jose jums juo juos juose
+jus ją jį jūs jūsų jų kad kadangi
+kai kaip kartais kartu kas kasdien kažkas kažką
+keli kelios kiek kita kitais kitam kitas kitiems
+kito kitomis kitoms kitos kituose kitą kokia koks
+kol kur kuri kuria kuriai kuriam kuriame kurie
+kurio kurioje kurios kuris kuriuo kuriuos kurią kurį
+labai lėtai man mane manimi mano manęs mažai
+mes mums mus mūsų nes niekada nieko nors
+nuo nėra pagal pas per po poryt prie
+prieš pro retai rytoj sau save savo savęs
+su ta tada tai taip tame tarp tas
+tau tave tavimi tavo tavęs ten tiek tik
+todėl toje truputį tu tuo tą už užvakar
+vakar vidury viduryje vienas vieną virš visa visada
+visi viskas visos visą visų vėlai yra čia
+į ši šia šiame šiandien šiek šioje šis
+šiuo šią žemiau

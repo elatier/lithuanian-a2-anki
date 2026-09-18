@@ -162,7 +162,21 @@ Write its paradigm into `data/manual_forms.tsv` instead:
 3. `python3 scripts/apply_accents.py` adds the stress marks.
 
 Before a release, `python3 scripts/verify_defs.py` with no arguments checks
-every batch.
+every batch. Every push runs the same checks on GitHub Actions: lint, the
+tests, the gate, and an offline build (`.github/workflows/ci.yml`).
+
+### Releasing
+
+Tag the commit and push the tag:
+
+```bash
+git tag v1.1.0 && git push origin v1.1.0
+```
+
+The release workflow builds the deck offline from that tag and attaches the
+`.apkg` to a GitHub release, which is what the download links point at.
+Update the numbers in this README, `docs/index.html` and `ankiweb/` first;
+`tests/test_docs.py` fails while they disagree with the data.
 
 ### The card format
 
@@ -191,11 +205,13 @@ data/batches/     batch*.tsv, the cards themselves
 data/audio/       the recordings, ~115 MB
 docs/             the deck page (GitHub Pages)
 ankiweb/          the AnkiWeb listing: description and Share-form fields
+.github/          CI, the release workflow, the correction issue template
+pyproject.toml    pytest and ruff configuration
 ```
 
 The scripts find their files through `scripts/paths.py`, so they can be run
-from any directory. Only the built decks, in `decks/`, are local and
-gitignored.
+from any directory. Only the built decks in `decks/` and the reports and
+previews in `out/` are local and gitignored.
 
 ### What the scripts do
 
@@ -235,7 +251,11 @@ The tests check that:
 - a bad answer is never saved as a clip or cached as a fact;
 - retries back off and give up instead of looping;
 - an interrupted recording never leaves a partial clip behind;
-- the whole deck builds with the network refused.
+- the whole deck builds with the network refused;
+- the text on a card is what the parsers and the bolding rules should
+  produce, and each QA rule fires on exactly the fault it is for;
+- the numbers in this README, the deck page and the AnkiWeb listing match
+  the data.
 
 ### The data
 
@@ -249,6 +269,9 @@ All in `data/`.
 | `THEMES.md` | the theme taxonomy |
 | `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
+| `function_words.txt` | grammar words that always count as known A2 vocabulary |
+| `proper_nouns.txt` | names that may open a sentence without failing SPELL or A2 |
+| `gloss_overrides.tsv` | translations the GLOSS check accepts on trust, each with its reason |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `cache/kaikki/`, `cache/wikt/` | every kaikki.org and Wiktionary lookup the build makes, so a build needs no network and does not drift as Wiktionary is edited. An empty file records that a word has no entry. |
 | `audio/` | the recordings, four per card, and `.text_manifest.json`, which records what each clip says so that edited text is re-recorded |
@@ -280,5 +303,5 @@ is required. The credit below is courtesy, not obligation.
 
 ## Corrections
 
-Open an issue with the word and what is wrong. Corrections go into the next
-build.
+[Open an issue](https://github.com/elatier/lithuanian-a2-anki/issues/new?template=correction.yml)
+with the word and what is wrong. Corrections go into the next build.

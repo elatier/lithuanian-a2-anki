@@ -17,7 +17,7 @@ Two sources, in order:
 
   1. accented.txt — produced by a human with VDU's Kirčiuoklis
      (https://kalbu.vdu.lt/mokymosi-priemones/kirciuoklis/), the standard
-     Lithuanian accentuation tool. Paste in the contents of needs_accents.txt
+     Lithuanian accentuation tool. Paste in the contents of out/needs_accents.txt
      (which lists whole paradigm lines, so the tool sees `megzti, mezga, mezgė`
      as a verb rather than three loose words) and save the output here. Format
      is free: the file is read as a bag of accented word forms, in any order,
@@ -39,14 +39,13 @@ import json
 import re
 import sys
 import unicodedata as u
-from pathlib import Path
 
 import ltcard
 import paths
 
 MANUAL = paths.MANUAL_FORMS
 SUPPLIED = paths.ACCENTED
-TODO = paths.ROOT / "needs_accents.txt"
+TODO = paths.OUT / "needs_accents.txt"
 
 # Grave, acute, tilde — the three Lithuanian stress marks, and nothing else.
 # The macron U+0304 is part of the LETTER ū, not an accent; counting it as one
@@ -182,6 +181,7 @@ def main():
 
     if not dry:
         MANUAL.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        TODO.parent.mkdir(exist_ok=True)
         TODO.write_text(
             "# Paradigms that still have unaccented forms — EVERY form printed\n"
             "# on a card should carry its stress mark, not just the headword.\n"

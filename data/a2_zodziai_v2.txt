@@ -1411,7 +1411,6 @@ vienuolika
 tie
 antra
 antras
-antros
 aš
 aštuntas
 aštuoni
@@ -1438,12 +1437,10 @@ ketvirtas
 kiekis
 koks
 mes
-pats
 penki
 penkioliktas
 penktas
 pirma
-pirmais
 pirmas
 pusė
 septintas
@@ -1451,7 +1448,6 @@ septyni
 septynioliktas
 svoris
 toks
-treti
 trečias
 truputis
 tryliktas
@@ -1459,7 +1455,6 @@ trys
 tu
 tūkstantis
 vidurinis
-vienam
 vienas
 vienuoliktas
 šeši
@@ -1500,7 +1495,6 @@ dirbtinis
 elektroninis
 forma
 geltonas
-geram
 greitas
 ilgas
 juodas

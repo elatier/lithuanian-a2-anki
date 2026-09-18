@@ -4,8 +4,9 @@ word list, so a later build or gate run needs no network for those words.
 
     python3 scripts/build_cache.py 0 200
 """
-import json, sys, concurrent.futures as cf
-from pathlib import Path
+import json
+import sys
+import concurrent.futures as cf
 import ltcard
 import paths
 
@@ -31,6 +32,7 @@ ok = 0
 with cf.ThreadPoolExecutor(10) as ex:
     for w, forms in ex.map(fetch, chunk):
         if forms is not None:
-            cache[w] = forms; ok += 1
+            cache[w] = forms
+            ok += 1
 json.dump(cache, open(paths.FORMS_CACHE, "w"), ensure_ascii=False)
 print(f"chunk {start}-{end}: cached {ok}, total {len(cache)}/{len(words)}")

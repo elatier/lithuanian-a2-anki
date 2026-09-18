@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
-"""
-ltcard.py (v4) — Lithuanian flashcards for AnkiMobile: one note -> two cards.
+"""ltcard.py — the card builder: note type, templates, CSS, the Wiktionary
+and kaikki.org lookups, and the LIEPA synthesiser call.
+
+One note -> two cards.
 
 CARD 1  Word card
   FRONT: word (bold) + audio; LT example + audio, word bolded
@@ -19,26 +20,21 @@ Forms line: nouns nom sg/pl · verbs principal parts (inf, pres3, past3)
 · adjectives masc/fem. The inflected word inside the example is bolded
 automatically by matching against all Wiktionary forms.
 
-Sources: en.wiktionary.org tables + kaikki.org (verifiable). Definitions,
-examples and translations are supplied via --defs FILE (tab-separated):
-  word <TAB> lt_def <TAB> en_word <TAB> en_def <TAB> lt_example <TAB> en_example
-The script WARNS if a definition contains any form of the headword
-(definitions must be word-free) or if no form of the word is found in the
-example. Words not found on Wiktionary are skipped, never invented.
+Sources: en.wiktionary.org tables + kaikki.org, both cached under data/cache/
+so a build needs no network. Definitions, examples and translations come from
+the batch files (see load_defs). Words not found on Wiktionary and not in
+manual_forms.tsv are skipped, never invented.
 
-Usage:
-  python3 scripts/ltcard.py namas kalbėti gražus --defs defs.tsv -o deck.apkg
-  Options: --deck NAME  --voice lt-LT-OnaNeural|lt-LT-LeonasNeural
+This module has no command line of its own: build_single.py builds the deck,
+resume_audio.py records the clips, verify_defs.py is the QA gate.
 """
 
-import argparse
-import functools
 import asyncio
+import functools
 import hashlib
 import html
 import json
 import re
-import sys
 import unicodedata
 from pathlib import Path
 
@@ -52,24 +48,6 @@ WIKT_HTML = "https://en.wiktionary.org/api/rest_v1/page/html/{}"
 KAIKKI = "https://kaikki.org/dictionary/Lithuanian/meaning/{a}/{ab}/{w}.jsonl"
 HEADERS = {"User-Agent": "ltcard/4.0 (personal flashcard tool)"}
 POSES = {"noun", "verb", "adj"}
-FUNCTION_WORDS = {
-    "yra", "būti", "buvo", "bus", "esu", "esi", "kad", "kai", "kur", "kas",
-    "kuris", "kuri", "kurie", "kurios", "kuriame", "kurioje", "kuriuos",
-    "arba", "bet", "labai", "apie", "prie", "ant", "per", "nuo", "iki",
-    "su", "be", "į", "iš", "po", "už", "tarp", "prieš", "dėl", "pagal",
-    "tai", "tas", "ta", "šis", "ši", "jis", "ji", "jie", "jos", "mes",
-    "savo", "kitas", "kita", "visi", "visos", "daug", "mažai", "dar",
-    "jau", "tik", "taip", "kaip", "pro", "aplink", "viduryje", "vidury", "keli", "kelios", "kažkas", "kažką", "nors", "gali",
-    # Pusiaukelė ch.4 (abstrakčiosios sąvokos) adverbs & connectors
-    "šiandien", "rytoj", "vakar", "užvakar", "poryt", "dabar", "tada",
-    "dažnai", "retai", "kartais", "visada", "niekada", "kasdien",
-    "anksti", "vėlai", "greitai", "lėtai", "gerai", "blogai", "kartu",
-    "čia", "ten", "todėl", "nes", "kadangi", "vieną", "vienas", "kiek",
-    "tiek", "šiek", "truputį", "gana", "kokia", "koks", "kurią", "kurio",
-    # added after the A2 gate flagged them repeatedly in otherwise good
-    # definitions — all ordinary grammar words the word list simply lacked
-    "atgal", "kol", "nieko", "nėra", "pas", "savęs", "save", "viskas", "visą", "visa", "visos", "visų", "kitiems", "kitoms", "kitais", "kitomis", "kituose", "virš", "žemiau", "aukščiau",
-}
 
 
 def _get(url, tries=4):
@@ -369,11 +347,12 @@ def pronoun_table(word, manual):
 # ---------- lookups (verifiable sources) ----------
 
 def kaikki_entries(word):
-    cdir = paths.KAIKKI_CACHE; cdir.mkdir(exist_ok=True)
+    cdir = paths.KAIKKI_CACHE
+    cdir.mkdir(exist_ok=True)
     cfile = cdir / f"{word}.jsonl"
     if cfile.exists():
-        return [json.loads(l) for l in
-                cfile.read_text(encoding="utf-8").splitlines() if l.strip()]
+        return [json.loads(line) for line in
+                cfile.read_text(encoding="utf-8").splitlines() if line.strip()]
     r = _get(KAIKKI.format(a=word[0], ab=word[:2], w=word))
     if r.status_code == 404:
         # Negative cache. Without this, every word that simply has no
@@ -402,7 +381,8 @@ def kaikki_entries(word):
 
 
 def wikt_lt_tables(word):
-    cdir = paths.WIKT_CACHE; cdir.mkdir(exist_ok=True)
+    cdir = paths.WIKT_CACHE
+    cdir.mkdir(exist_ok=True)
     cfile = cdir / f"{word}.html"
     if cfile.exists():
         soup = BeautifulSoup(cfile.read_text(encoding="utf-8"), "html.parser")
@@ -580,7 +560,8 @@ def _is_mp3(data):
 
 def _liepa_audio(r):
     """The MP3 bytes in a LIEPA response, or BadAudio."""
-    import base64, binascii
+    import base64
+    import binascii
     try:
         data = base64.b64decode(r.json()["audioAsString"])
     except (ValueError, KeyError, TypeError, binascii.Error) as exc:
@@ -803,6 +784,31 @@ def load_manual_forms(path=paths.MANUAL_FORMS):
     return mf
 
 
+def load_word_set(path):
+    """The words in a plain text file, lowercased: any number per line,
+    `#` starts a comment. data/function_words.txt and data/proper_nouns.txt."""
+    words, p = set(), Path(path)
+    if not p.exists():
+        return words
+    for line in p.read_text(encoding="utf-8").splitlines():
+        words.update(w.lower() for w in line.split("#", 1)[0].split())
+    return words
+
+
+def load_gloss_overrides(path=None):
+    """Card key -> the accepted English gloss, from data/gloss_overrides.tsv
+    (key, gloss, note). The GLOSS check takes these on trust; the note says
+    why each one was allowed."""
+    out, p = {}, Path(path or paths.GLOSS_OVERRIDES)
+    if not p.exists():
+        return out
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            key, _, rest = line.partition("\t")
+            out[key.strip()] = rest.split("\t")[0].strip()
+    return out
+
+
 # The word list lives in data/. It used to be referenced by an absolute path
 # that existed only on the machine the deck was first built on; everywhere
 # else load_themes() silently returned {} and every note was tagged
@@ -863,14 +869,23 @@ def display_word(headword, qualifier):
 
 
 def process_word(key, voice, media_dir, defs, notes, media, errors,
-                 engine="liepa", known=None, extra_tags=None):
-    # `key` may be `headword#sense`; everything linguistic keys off headword,
-    # while the card identity and display key off the full key.
+                 engine="liepa", extra_tags=None, tts=None):
+    """Build the note for one card and append it to `notes`.
+
+    `key` may be `headword#sense`: everything linguistic keys off the
+    headword, the card identity and display key off the full key. The four
+    clips are requested through `tts(text, path, voice, engine)`, which
+    defaults to make_audio; the build passes a no-op because every clip is
+    already recorded, and the audio planner passes a recorder that only
+    notes what each clip would say.
+    """
+    tts = tts or make_audio
     word = key.split("#")[0]
-    _d = defs.get(key) or {}
-    qualifier = _d.get("qualifier", "")
-    shown = display_word(word, qualifier)
-    spoken = f"{qualifier} {word}".strip()
+    d = defs.get(key)
+    if not d:
+        errors.append(f"{key}: no defs entry — skipped.")
+        return
+    qualifier = d.get("qualifier", "")
     manual_all = load_manual_forms()
     manual = manual_all.get(word)
     pron_table = pronoun_table(word, manual_all)   # "" unless a pronoun
@@ -879,48 +894,55 @@ def process_word(key, voice, media_dir, defs, notes, media, errors,
     # so skip the lookup entirely
     tables = [] if manual else wikt_lt_tables(word)
     poses = {e.get("pos") for e in entries} & POSES
-    if manual:
-        d = defs.get(key)
-        if not d:
-            errors.append(f"{word}: no defs entry — skipped."); return
-        kind = manual["pos"]
-        forms_line = manual["forms_line"]
-        match_forms = manual["forms"]
+
+    def emit(kind, forms_line, match_forms, spoken_head, en_word):
+        """Request the four clips and append the note."""
         example_html, found = bold_word(html.escape(d["lt_example"]),
                                         match_forms)
         if not found:
-            errors.append(f"{word}: WARNING — headword form not found "
-                          f"in example."); 
+            errors.append(f"{word}: WARNING — no inflected form of the word "
+                          f"found in example '{d['lt_example']}'; not bolded. "
+                          f"Check the sentence.")
+        leak = [t for t in tokenize(d["lt_def"].lower()) if t in match_forms]
+        if leak:
+            errors.append(f"{word}: WARNING — definition contains the "
+                          f"headword form(s) {leak}; definitions must be "
+                          f"word-free.")
         h = hashlib.md5(f"{key}:{kind}:{AUDIO_TAG}".encode()).hexdigest()[:8]
-        paths = {k: media_dir / f"lt_{h}_{k}.mp3" for k in ("w","f","d","e")}
-        make_audio(spoken, paths["w"], voice, engine)
-        make_audio(forms_clip_text(word, forms_line, manual_all),
-                   paths["f"], voice, engine)
-        make_audio(d["lt_def"], paths["d"], voice, engine)
-        make_audio(d["lt_example"], paths["e"], voice, engine)
-        media += [str(p) for p in paths.values()]
+        clip = {k: media_dir / f"lt_{h}_{k}.mp3" for k in ("w", "f", "d", "e")}
+        tts(f"{qualifier} {spoken_head}".strip(), clip["w"], voice, engine)
+        tts(forms_clip_text(word, forms_line, manual_all), clip["f"], voice,
+            engine)
+        tts(d["lt_def"], clip["d"], voice, engine)
+        tts(d["lt_example"], clip["e"], voice, engine)
+        media.extend(str(p) for p in clip.values())
         # bold the English equivalent, mirroring the bolded Lithuanian
-        en_def_html, _ = bold_en(html.escape(d["en_def"]), d["en_word"])
-        en_ex_html, _ = bold_en(html.escape(d["en_example"]), d["en_word"])
+        en_def_html, _ = bold_en(html.escape(d["en_def"]), en_word)
+        en_ex_html, _ = bold_en(html.escape(d["en_example"]), en_word)
         vertimai = " · ".join(x for x in (en_def_html, en_ex_html) if x)
-        notes.append(genanki.Note(model=MODEL,
-            guid=genanki.guid_for(key, kind),
-            tags=[f"pos::{kind}", f"tema::{load_themes().get(word, 'be-temos')}"]
-                 + (extra_tags or []), fields=[
-            # field 3 was the part of speech, which no template ever read;
-            # it now carries the pronoun table (empty for every other word),
-            # so no field had to be added — adding one changes the notetype
-            # schema and Anki then refuses to update an existing collection.
-            # The part of speech is still on the note as a pos:: tag.
-            shown, qualifier,
-            (pron_table + f'[sound:{paths["f"].name}]') if pron_table
-            else "",
-            html.escape(forms_line), html.escape(d["en_word"]),
-            html.escape(d["lt_def"]), example_html,
-            en_def_html, en_ex_html,
-            vertimai,
-            f'[sound:{paths["w"].name}]', f'[sound:{paths["f"].name}]',
-            f'[sound:{paths["d"].name}]', f'[sound:{paths["e"].name}]']))
+        sound = {k: f"[sound:{p.name}]" for k, p in clip.items()}
+        notes.append(genanki.Note(
+            model=MODEL, guid=genanki.guid_for(key, kind),
+            tags=[f"pos::{kind}",
+                  f"tema::{load_themes().get(word, 'be-temos')}"]
+                 + (extra_tags or []),
+            fields=[
+                display_word(word, qualifier),
+                # Field 2 is the qualifier (see MODEL for why it is still
+                # called Accented); field 3 was the part of speech, which no
+                # template read, and now carries the pronoun table — adding
+                # a field would change the notetype schema, and Anki then
+                # refuses to update an existing collection.
+                qualifier,
+                (pron_table + sound["f"]) if pron_table else "",
+                html.escape(forms_line), html.escape(en_word),
+                html.escape(d["lt_def"]), example_html,
+                en_def_html, en_ex_html, vertimai,
+                sound["w"], sound["f"], sound["d"], sound["e"]]))
+
+    if manual:
+        emit(manual["pos"], manual["forms_line"], manual["forms"], word,
+             d["en_word"])
         errors.append(f"{word}: NOTE — built from manual forms "
                       f"(absent from Wiktionary, hunspell-verified).")
         return
@@ -928,14 +950,8 @@ def process_word(key, voice, media_dir, defs, notes, media, errors,
         errors.append(f"{word}: not found as a Lithuanian noun/verb/adjective "
                       f"on Wiktionary — skipped.")
         return
-    d = defs.get(key)
-    if not d:
-        errors.append(f"{key}: no defs.tsv entry — skipped (definitions and "
-                      f"examples are required in this format).")
-        return
     if d.get("pos"):
         poses &= {d["pos"]}
-
     for table in tables:
         kind = classify_table(table)
         if kind not in poses:
@@ -951,112 +967,6 @@ def process_word(key, voice, media_dir, defs, notes, media, errors,
         if not forms_line:
             errors.append(f"{word}: could not parse {kind} forms — skipped.")
             continue
-
-        match_forms = all_word_forms(entries, kind)
-        example_html, found = bold_word(html.escape(d["lt_example"]),
-                                        match_forms)
-        if not found:
-            errors.append(f"{word}: WARNING — no inflected form of the word "
-                          f"found in example '{d['lt_example']}'; not bolded. "
-                          f"Check the sentence.")
-        leak = [t for t in tokenize(d["lt_def"].lower())
-                if t in match_forms]
-        if leak:
-            errors.append(f"{word}: WARNING — definition contains the "
-                          f"headword form(s) {leak}; definitions must be "
-                          f"word-free.")
-
-        en_word = d["en_word"] or wikt_gloss(entries, kind)
-
-        h = hashlib.md5(f"{key}:{kind}:{AUDIO_TAG}".encode()).hexdigest()[:8]
-        paths = {k: media_dir / f"lt_{h}_{k}.mp3"
-                 for k in ("w", "f", "d", "e")}
-        make_audio(f"{qualifier} {strip_stress(canon)}".strip(),
-                   paths["w"], voice, engine)
-        make_audio(forms_clip_text(word, forms_line, manual_all),
-                   paths["f"], voice, engine)
-        make_audio(d["lt_def"], paths["d"], voice, engine)
-        make_audio(d["lt_example"], paths["e"], voice, engine)
-        media += [str(p) for p in paths.values()]
-
-        en_def_html, _ = bold_en(html.escape(d["en_def"]), en_word)
-        en_ex_html, _ = bold_en(html.escape(d["en_example"]), en_word)
-        vertimai = " · ".join(x for x in (en_def_html, en_ex_html) if x)
-        notes.append(genanki.Note(model=MODEL,
-            guid=genanki.guid_for(key, kind),
-            tags=[f"pos::{kind}", f"tema::{load_themes().get(word, 'be-temos')}"]
-                 + (extra_tags or []), fields=[
-            shown,
-            qualifier,
-            (pron_table + f'[sound:{paths["f"].name}]') if pron_table
-            else "",
-            html.escape(forms_line),
-            html.escape(en_word), html.escape(d["lt_def"]), example_html,
-            en_def_html, en_ex_html,
-            vertimai,
-            f'[sound:{paths["w"].name}]', f'[sound:{paths["f"].name}]',
-            f'[sound:{paths["d"].name}]', f'[sound:{paths["e"].name}]']))
+        emit(kind, forms_line, all_word_forms(entries, kind),
+             strip_stress(canon), d["en_word"] or wikt_gloss(entries, kind))
         poses.discard(kind)
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("words", nargs="+")
-    ap.add_argument("-o", "--out", default="lietuviu_kalba.apkg")
-    ap.add_argument("--deck", default="Lietuvių kalba")
-    ap.add_argument("--engine", choices=["liepa", "edge"], default="liepa",
-                    help="liepa = Lithuanian LIEPA synthesizer (default); "
-                         "edge = Microsoft neural voices")
-    ap.add_argument("--voice", default=None,
-                    help="liepa: astra, lina, laimis, vytautas; "
-                         "edge: lt-LT-OnaNeural, lt-LT-LeonasNeural")
-    ap.add_argument("--tag", action="append", default=[],
-                    help="extra tag(s) for all notes, e.g. batch::batch1")
-    ap.add_argument("--cache", default=str(paths.FORMS_CACHE),
-                    help="known-forms cache for A2 vocabulary checking")
-    ap.add_argument("--defs", required=True,
-                    help="TSV: word, lt_def, en_word, en_def, "
-                         "lt_example, en_example")
-    args = ap.parse_args()
-
-    if args.voice is None:
-        args.voice = "astra" if args.engine == "liepa" else "lt-LT-OnaNeural"
-    known = None
-    if Path(args.cache).exists():
-        cache = json.load(open(args.cache, encoding="utf-8"))
-        known = set()
-        for w, forms in cache.items():
-            known.add(w); known.update(forms)
-        known |= FUNCTION_WORDS
-    defs = load_defs(args.defs)
-    media_dir = paths.MEDIA; media_dir.mkdir(exist_ok=True)
-    deck = genanki.Deck(
-        int(hashlib.md5(args.deck.encode()).hexdigest()[:8], 16), args.deck)
-    notes, media, errors = [], [], []
-
-    for w in args.words:
-        print(f"• {w} ...", flush=True)
-        try:
-            process_word(w.strip().lower(), args.voice, media_dir,
-                         defs, notes, media, errors,
-                         engine=args.engine, known=known,
-                         extra_tags=args.tag)
-        except Exception as exc:
-            errors.append(f"{w}: error — {exc}")
-
-    for n in notes:
-        deck.add_note(n)
-    if notes:
-        pkg = genanki.Package(deck)
-        pkg.media_files = media
-        pkg.write_to_file(args.out)
-        print(f"\nWrote {args.out}: {len(notes)} note(s), "
-              f"{2 * len(notes)} cards.")
-    else:
-        print("\nNo cards generated.")
-    for e in errors:
-        print("!", e, file=sys.stderr)
-
-
-if __name__ == "__main__":
-    main()

@@ -47,11 +47,10 @@ Real cards from the deck:
 
 3. **A2 vocabulary only.** Every Lithuanian word in `lt_def` and
    `lt_example` should be A2 vocabulary. That means a form in
-   `forms_cache.json` or `manual_forms.tsv`, a function word
-   (`FUNCTION_WORDS` in `scripts/ltcard.py`), a documented exception in
-   `extra_def_vocab.tsv`, or a proper noun (`PROPER_NOUNS` in
-   `scripts/verify_defs.py`). Anything else is an A2 warning. Capitalising
-   a word at the start of a sentence does not excuse it.
+   `forms_cache.json` or `manual_forms.tsv`, a grammar word in
+   `function_words.txt`, a documented exception in `extra_def_vocab.tsv`,
+   or a proper noun in `proper_nouns.txt`. Anything else is an A2 warning.
+   Capitalising a word at the start of a sentence does not excuse it.
 
 4. **The example contains an inflected form of the headword**, and
    preferably not the dictionary form: `Vaikai sėdi ant žolės.`, not
@@ -63,7 +62,9 @@ Real cards from the deck:
    the sentence. (ORDER)
 
 6. **`en_word` must be one of the word's Wiktionary glosses.** If your
-   preferred translation is not among them, pick one that is. (GLOSS)
+   preferred translation is not among them, pick one that is — or, when
+   Wiktionary's wording is genuinely deficient, add a row to
+   `gloss_overrides.tsv` saying what you chose and why. (GLOSS)
 
 7. **Spell everything correctly.** Every Lithuanian word is checked with
    hunspell `lt_LT`. (SPELL)
