@@ -83,27 +83,81 @@ With the seams showing:
 
 ## Building it yourself
 
-The whole deck is generated from the `data/batches/batch*.tsv` files in this repo — one row
-per word, seven tab-separated columns:
+Everything needed to rebuild the released deck is in this repo and its
+release: the cards are in `data/`, and the recordings are a release asset, so
+a rebuild does not have to synthesise any audio.
 
-```
-key    lt_def    en_word    en_def    lt_example    en_example    pos
-```
+### Setting up
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-brew install hunspell          # or: apt install hunspell hunspell-lt
-# the lt_LT dictionary must be on hunspell's path
-
-python3 scripts/verify_defs.py data/batches/batch32.tsv  # QA gate on one batch
-python3 scripts/resume_audio.py        # fetch missing clips (LIEPA, rate-limited)
-./build_single.sh --subdecks tema      # -> decks/lietuviu_A2.apkg
 ```
 
-`scripts/resume_audio.py` is the slow step: 6,372 clips at roughly 1,250/hour. Audio is
-cached in `media_tmp/`, which is gitignored, so a fresh clone starts from zero.
-To build without waiting, `./build_single.sh --no-fetch` produces the same deck
-minus the recordings.
+`build_single.sh` uses `.venv` automatically, even when it is not activated.
+The other scripts run with whichever `python3` is active.
+
+The QA scripts, `verify_defs.py` and `check_forms.py`, also need **hunspell**
+with the Lithuanian dictionary. Building the deck does not.
+
+- **Debian/Ubuntu:** `apt install hunspell hunspell-lt`
+- **macOS:** `brew install hunspell`. Homebrew has no Lithuanian dictionary, so
+  take `lt.aff` and `lt.dic` from
+  [LibreOffice/dictionaries](https://github.com/LibreOffice/dictionaries/tree/master/lt_LT)
+  and save them as `~/Library/Spelling/lt_LT.aff` and `lt_LT.dic`.
+
+If the dictionary is missing, the scripts stop with an error rather than
+passing everything.
+
+### Rebuilding the released deck
+
+```bash
+python3 scripts/fetch_audio.py    # the 6,372 clips, ~115 MB, into media_tmp/
+./build_single.sh                 # -> decks/lietuviu_A2.apkg
+```
+
+The result has the same notes, cards, subdecks and audio as the release.
+Because the note IDs are stable, importing it over an existing copy updates
+the cards in place. `./build_single.sh --no-fetch` builds without calling the
+synthesiser at all; any clip that is missing is left out of the deck.
+
+### Adding or changing a word
+
+1. **Edit the card** in a `data/batches/batch*.tsv` file, or start a new
+   batch. See [the card format](#the-card-format) below.
+2. **Give it a theme**: the headword must be listed in `data/a2_zodziai_v2.txt`
+   under one of the themes in `data/THEMES.md`. Otherwise it is tagged
+   `tema::be-temos` and lands outside the theme subdecks.
+3. **Inflected forms** come from Wiktionary. If Wiktionary has no table for
+   the word, write the paradigm into `data/manual_forms.tsv`.
+   `python3 scripts/gen_forms.py WORD POS` drafts a line for regular words.
+   Then run `python3 scripts/check_forms.py` to spell-check every form, and
+   `python3 scripts/apply_accents.py` to add the stress marks.
+4. **Check it**: `python3 scripts/verify_defs.py` runs the QA gate over every
+   batch. Pass it one file to check just that batch. Run
+   `python3 scripts/root_leak.py data/batches/batchN.tsv` to catch definitions
+   that give the answer away through a related word.
+5. **Record the audio**: `python3 scripts/resume_audio.py` synthesises only
+   what is missing. That includes clips whose text changed: it keeps a
+   manifest of what each clip says. It is slow, about 1,250 clips an hour.
+6. **Build**: `./build_single.sh`.
+
+### The card format
+
+One row per card, tab-separated, no header:
+
+```
+key    lt_def    en_word    en_def    lt_example    en_example    pos    [qualifier]
+```
+
+- `key` is normally the headword. A word taught in two senses gets one row per
+  sense, keyed `headword#sense` (e.g. `žibintas#auto`, `žibintas`).
+- `qualifier` is optional. It is shown in lighter type beside the headword to
+  tell the senses apart (`gatvės žibintas`, `automobilio žibintas`), and the
+  definition must not contain it.
+- `lt_def` must not contain any form of the headword, and `lt_example` must
+  contain at least one. `verify_defs.py` enforces both.
 
 ### Layout
 
@@ -116,9 +170,12 @@ docs/             the deck page (GitHub Pages)
 ```
 
 The scripts find their files through `scripts/paths.py`, so they can be run
-from any directory. Local caches — `media_tmp/`, `kaikki_cache/`,
-`wikt_cache/` — and built decks in `decks/` live in the repo root and are
-gitignored.
+from any directory. The local caches are gitignored and live in the repo
+root:
+
+- `media_tmp/`: the audio
+- `kaikki_cache/` and `wikt_cache/`: dictionary lookups
+- `decks/`: the built decks
 
 ### What the scripts do
 
@@ -126,16 +183,20 @@ All in `scripts/`.
 
 | | |
 |---|---|
-| `ltcard.py` | the card builder — note type, templates, CSS, Wiktionary lookups, TTS |
-| `build_single.py` (and `../build_single.sh`) | one `.apkg` for the whole deck; `--subdecks tema\|batch\|none` |
-| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN |
-| `resume_audio.py` | fetches only the clips that are missing, and resumes |
-| `invalidate_audio.py` | drops clips whose Lithuanian text changed — filenames hash the card key, not the text |
-| `apply_accents.py` | places stress marks on headwords and every displayed form |
-| `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
-| `gen_forms.py`, `scan_forms_lines.py` | paradigm generation and auditing |
+| `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
+| `fetch_audio.py` | downloads the published recordings into `media_tmp/` |
+| `resume_audio.py` | synthesises missing or outdated clips (LIEPA, rate-limited, resumable) |
+| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD |
 | `root_leak.py` | catches definitions that share a root with their headword |
-| `theme_preview.py`, `themes*_candidates.py`, `pron_preview.py` | render real cards under candidate stylings; how the current theme was chosen |
+| `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
+| `gen_forms.py` | drafts a `manual_forms.tsv` line for a regular word |
+| `apply_accents.py` | places stress marks on headwords and every displayed form |
+| `scan_forms_lines.py` | audits the inflection line on every card |
+| `invalidate_audio.py` | forces specific words to be re-recorded |
+| `build_cache.py` | pre-fetches Wiktionary paradigms into `forms_cache.json` |
+| `ltcard.py` | the card builder library: note type, templates, CSS, Wiktionary lookups, TTS |
+| `paths.py`, `spell.py` | file locations; the hunspell wrapper |
+| `theme_preview.py`, `themes*_candidates.py`, `pron_preview.py` | design history: render real cards under candidate stylings; how the current theme was chosen |
 
 ### The data
 
@@ -143,14 +204,14 @@ All in `data/`.
 
 | | |
 |---|---|
-| `batch*.tsv` | the 1,593 cards |
+| `batches/batch*.tsv` | the 1,593 cards |
 | `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
-| `a2_zodziai_v2.txt` | the word list, grouped by theme — the source of the `tema::` tags |
+| `a2_zodziai_v2.txt` | the word list, grouped by theme; the source of the `tema::` tags |
+| `THEMES.md` | the theme taxonomy |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `forms_cache.json` | cached Wiktionary paradigms, so a build needs no network for known words |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
-| `THEMES.md` | the theme taxonomy behind the `tema::` tags |
 
 ## Licence and reuse
 

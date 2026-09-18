@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """apply_accents.py — put stress marks on the hand-written paradigms.
 
-The 371 paradigms in manual_forms.tsv were typed for words Wiktionary has no
-declension table for, and typed without stress marks — while the 1,017 cards
+The paradigms in manual_forms.tsv were typed for words Wiktionary has no
+declension table for, and typed without stress marks — while the cards
 built from Wiktionary carry them on every form of the line (žibiñtas / žibiñtai).
 This closes the gap from sources that actually have the data, and refuses to
 invent the rest.

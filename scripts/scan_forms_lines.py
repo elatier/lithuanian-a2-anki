@@ -69,7 +69,5 @@ def main(files):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:] or [str(paths.BATCHES / f)
-                            for f in ["batch1_full.tsv"] +
-                            [f"batch{i}.tsv" for i in range(2, 31)]]
+    args = sys.argv[1:] or [str(p) for p in paths.batch_files()]
     sys.exit(main(args))

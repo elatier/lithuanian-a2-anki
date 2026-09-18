@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""invalidate_audio.py [word ...] — drop clips whose Lithuanian text changed.
+"""invalidate_audio.py WORD ... — delete a word's clips so they are re-recorded.
 
-Clip filenames hash the card key, not the spoken text, so editing a definition
-leaves the old recording in place. resume_audio.py now keeps a manifest that
-catches this going forward, but clips generated before the manifest existed
-have no record. Run this ONCE against the words whose text is known to have
-changed; after that the manifest handles it automatically.
+You normally do not need this. Clip filenames hash the card key, not the
+spoken text, but resume_audio.py keeps a manifest of what each clip says
+(media_tmp/.text_manifest.json) and re-records any clip whose text changed.
+Use this only to force a fresh recording, e.g. when a clip sounds wrong.
 
-    python3 scripts/invalidate_audio.py           # the known list below
-    python3 scripts/invalidate_audio.py kasa oda  # specific words
+    python3 scripts/invalidate_audio.py kasa oda
 """
 import hashlib
 import json
@@ -16,35 +14,6 @@ import sys
 
 import ltcard
 import paths
-
-# Headwords whose definition, example or spoken form changed after their audio
-# may already have been generated.
-CHANGED = """
-žibintas žiedas oda žalias balandis aštrus kasa narys šokti besmegenis lipti
-skalbyklė džiovyklė skalbykla šviesti pati
-pavardė gimtadienis miegamasis prieškambaris senamiestis ligoninė augalas
-šaltis vakarienė kepti prašymas tautybė vairuoti parašas pagalvė svetainė
-# 28 words whose canonical form carried kaikki annotation ("sakinỹs m stress
-# pattern 3ᵇ") — that text was spoken as the headword audio
-alkanas atskiras avinas brangus didelis dovana dujos gabalas gegužė kailiniai
-kamuolys katinas marškiniai metai pabaiga paprastas patogus pavyzdys pažymys
-sakinys saldus smegenys traukinys uodega užduotis vakarai ąžuolas žmogus
-# cards whose Lithuanian was rewritten in the review pass
-apžiūrėti lipdyti antra pirma kartas ateiti galima meistras spręsti tirti
-kiaušinienė omletas
-# definition rewritten
-arbata
-# example sentence reordered to fix the ORDER warnings
-balkonas blogas prieškambaris svetainė lova rožė tulpė
-# pronoun pass: jie/jūs/mes had their definitions rewritten, and jie/tie/šie
-# now show a masculine|feminine table instead of the masculine paradigm alone,
-# so their FORMS clip says twelve forms rather than six
-jie jūs mes tie šie
-# NOTE: the "(tik vns.)" / "(tik dgs.)" number marker was corrected on 20
-# nouns, but forms_speech() strips anything in parentheses, so the spoken
-# forms clip is unchanged and those words do NOT need new audio.
-""".split()
-CHANGED = [w for w in CHANGED if not w.startswith("#")]
 
 MEDIA = paths.MEDIA
 MANIFEST = MEDIA / ".text_manifest.json"
@@ -81,8 +50,10 @@ def main(words):
         MANIFEST.write_text(json.dumps(man, ensure_ascii=False, indent=0),
                             encoding="utf-8")
     print(f"deleted {len(gone)} stale clip(s) for {len(words)} word(s)")
-    print("rerun resume_audio.py to regenerate them")
+    print("rerun scripts/resume_audio.py to regenerate them")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or CHANGED)
+    if len(sys.argv) < 2:
+        sys.exit(__doc__.strip())
+    main(sys.argv[1:])

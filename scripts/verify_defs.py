@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-verify_defs.py — automated QA for defs.tsv before any deck is built.
+verify_defs.py — automated QA for the batch files before any deck is built.
 
 Checks per word (no human input needed):
   1. SPELL   every Lithuanian word in the definition and example exists
@@ -13,20 +13,21 @@ Checks per word (no human input needed):
              A2 list (forms_cache.json) + function words
   6. LEN     definition is short enough for A2 (warn > 12 tokens)
 
-Also writes review.txt: word | draft def | Wiktionary glosses | EN —
-side by side, so human spot-checking a sample takes seconds per word.
+Also writes review.txt (repo root): word | draft def | Wiktionary glosses |
+EN — side by side, so human spot-checking a sample takes seconds per word.
 
-Usage: python3 scripts/verify_defs.py data/batches/batchN.tsv
-Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM) fails.
+Usage: python3 scripts/verify_defs.py                            # every batch
+       python3 scripts/verify_defs.py data/batches/batch32.tsv   # just one
+Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM/QUAL/HEAD) fails.
 """
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 import ltcard
 import paths
+import spell
 
 CACHE = paths.FORMS_CACHE
 
@@ -268,15 +269,14 @@ def spell_unknown(text, headword_forms=frozenset()):
     inflections are verified when the paradigm is written, so an example
     sentence must not fail merely for containing the word it is illustrating.
     """
-    p = subprocess.run(["hunspell", "-d", "lt_LT", "-i", "UTF-8", "-l"],
-                       input=text, capture_output=True, text=True)
     proper = meaningful_caps(text)
-    return sorted({w for w in p.stdout.split()
+    return sorted({w for w in spell.unknown_words(text)
                    if w and w.lower() not in headword_forms
                    and (not w[0].isupper() or w.lower() not in proper)})
 
 
-def main(path):
+def check(path):
+    """Print the report for one batch; return (hard_fail, review entries)."""
     defs = ltcard.load_defs(path)
     known = None
     if CACHE.exists():
@@ -420,10 +420,24 @@ def main(path):
                       f"  EN     : {d['en_word']} — {d['en_def']}\n"
                       f"  Pvz    : {d['lt_example']}\n"
                       f"  Pvz EN : {d['en_example']}\n")
-    Path("review.txt").write_text("\n".join(review), encoding="utf-8")
-    print(f"\nreview.txt written ({len(review)} words).")
-    sys.exit(1 if hard_fail else 0)
+    return hard_fail, review
+
+
+def main(files):
+    failed, review = [], []
+    for f in files:
+        print(f"=== {Path(f).name}")
+        bad, rev = check(f)
+        review += rev
+        if bad:
+            failed.append(Path(f).name)
+    out = paths.ROOT / "review.txt"
+    out.write_text("\n".join(review), encoding="utf-8")
+    print(f"\n{out.name} written ({len(review)} words).")
+    if failed:
+        print(f"FAIL in {len(failed)} file(s): {', '.join(failed)}")
+    sys.exit(1 if failed else 0)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1:] or [str(p) for p in paths.batch_files()])

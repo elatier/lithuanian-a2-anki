@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """build_single.py — build ONE .apkg containing every batch.
 
-build_decks.sh writes one deck per batch, which means 30 imports and 30 decks
-in Anki. This puts all 1,389 notes in a single package instead, keeping the
-per-batch tag so nothing is lost: every note still carries `batch::batchN`,
-`pos::*` and `tema::*`, so any batch or theme can be pulled out in Anki with a
-tag search or a filtered deck.
+Every note carries `batch::batchN`, `pos::*` and `tema::*` tags, so any batch
+or theme can be pulled out in Anki with a tag search or a filtered deck.
 
 It reuses ltcard.py's own card builder — same fields, same audio, same note
 GUIDs — so re-importing over an existing collection updates the notes in place
 rather than duplicating them.
 
-    python3 scripts/build_single.py                  # decks/lietuviu_A2.apkg, flat
-    python3 scripts/build_single.py --subdecks tema  # subdeck per theme
+    python3 scripts/build_single.py                  # decks/lietuviu_A2.apkg
+    python3 scripts/build_single.py --subdecks none  # one flat deck
     python3 scripts/build_single.py --subdecks batch # subdeck per batch
     python3 scripts/build_single.py -o ~/Desktop/lt.apkg
 
-Audio must already be cached — run `python3 scripts/resume_audio.py` until it reports
-nothing left to generate, or this will hit the LIEPA rate limit mid-build.
+The default is a subdeck per theme, which is what the released deck uses.
+
+Audio must already be cached — run `python3 scripts/fetch_audio.py` (or
+`python3 scripts/resume_audio.py`) first, or this will hit the LIEPA rate
+limit mid-build.
 """
 import argparse
 import hashlib
@@ -108,9 +108,9 @@ def main():
     ap.add_argument("-o", "--out", default=str(paths.DECKS / "lietuviu_A2.apkg"))
     ap.add_argument("--deck", default="Lietuvių A2")
     ap.add_argument("--subdecks", choices=["none", "batch", "tema"],
-                    default="none",
-                    help="none = one flat deck (default); batch/tema = a "
-                         "subdeck per batch or per theme tag")
+                    default="tema",
+                    help="tema = a subdeck per theme (default, as released); "
+                         "batch = a subdeck per batch; none = one flat deck")
     ap.add_argument("--voice", default="astra")
     ap.add_argument("--engine", choices=["liepa", "edge"], default="liepa")
     ap.add_argument("--cache", default=str(paths.FORMS_CACHE))
@@ -208,8 +208,7 @@ def main():
               f"note GUIDs are stable, so Anki will update in place.",
               file=sys.stderr)
     # ltcard.py uses one list for both real failures and informational notes
-    # ("NOTE — built from manual forms"); only the former should fail a build,
-    # exactly as build_decks.sh treats them
+    # ("NOTE — built from manual forms"); only the former should fail a build
     fatal = [e for e in errors if "NOTE —" not in e and "WARNING —" not in e]
     for e in errors:
         print("!" if e in fatal else "·", e, file=sys.stderr)
