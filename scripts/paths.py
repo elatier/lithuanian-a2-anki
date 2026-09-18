@@ -19,6 +19,7 @@ MANUAL_FORMS = DATA / "manual_forms.tsv"
 FORMS_CACHE = DATA / "forms_cache.json"
 THEME_FILE = DATA / "a2_zodziai_v2.txt"
 EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
+HUNSPELL = DATA / "hunspell"        # lt_LT.aff + lt_LT.dic, BSD (see COPYING)
 ACCENTED = DATA / "accented.txt"
 FUNCTION_WORDS = DATA / "function_words.txt"
 PROPER_NOUNS = DATA / "proper_nouns.txt"

@@ -11,15 +11,15 @@ import spell
 
 def hunspell_ready():
     try:
-        p = subprocess.run(["hunspell", "-d", "lt_LT", "-l"], input="namas",
-                           capture_output=True, text=True)
+        p = subprocess.run(["hunspell", "-d", str(spell.DICT), "-l"],
+                           input="namas", capture_output=True, text=True)
     except FileNotFoundError:
         return False
     return p.returncode == 0
 
 
 needs_hunspell = pytest.mark.skipif(not hunspell_ready(),
-                                    reason="hunspell lt_LT not installed")
+                                    reason="hunspell not installed")
 
 
 # ---------------------------------------------------------------- hunspell --

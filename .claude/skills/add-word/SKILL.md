@@ -6,9 +6,9 @@ description: Add words to the deck end to end — one word, or a batch from a li
 # Add words: $ARGUMENTS
 
 The scripts do everything mechanical; you write four columns of Lithuanian
-and English per word and fix what the gate rejects. There is one
-checkpoint, before recording: recording calls a public service, and no
-native speaker has proofread the deck, so the user sees every card first.
+and English per word and fix what the gate rejects. Run straight through:
+no checkpoint. The user reads the finished cards in your final report and
+in the commit, and corrects them afterwards if needed.
 
 The argument is either words (`slėnis`, `slėnis žvakidė`) or a file of
 `word <TAB> theme [<TAB> pos]` lines. Several words are a batch: scaffold
@@ -17,9 +17,9 @@ whole, and stop once.
 
 ## 0. Environment
 
-If `.venv/bin/python` is missing, or `echo namas | hunspell -d lt_LT -l`
-fails, run `./setup.sh` (it may need the user's approval to install
-hunspell). Use `.venv/bin/python` for every script below.
+If `.venv/bin/python` is missing or `hunspell` is not on the path, run
+`./setup.sh` (it may need the user's approval to install hunspell; the
+dictionary is in the repo). Use `.venv/bin/python` for every script below.
 
 ## 1. Read the packet for each word
 
@@ -105,13 +105,7 @@ Fix every `[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD) and every
 `[WARN]` that is easy (LEN, A2, ORDER). Root-leak hits are for judgement:
 a shared prefix is not a shared root. Rerun after each edit.
 
-## 6. Checkpoint
-
-Show the user every finished row (for a batch, `out/review.txt` is the
-side-by-side view) and the gate's output, and ask whether to record. Wait
-for a yes.
-
-## 7. Record, build, update the numbers
+## 6. Record, build, update the numbers
 
 ```bash
 .venv/bin/python scripts/add_word.py WORD            # one word
@@ -125,10 +119,16 @@ Recording is paced for the public synthesiser: about four clips a word,
 a few seconds each. A batch of thirty words takes around ten minutes; the
 script resumes if interrupted.
 
-## 8. Commit
+## 7. Commit
 
 Stage the batch file, `data/a2_zodziai_v2.txt`, the new clips and
 `data/audio/.text_manifest.json`, any new files under `data/cache/`, any
 `manual_forms.tsv` or `gloss_overrides.tsv` rows, and the docs the numbers
 script touched. Message: `Add WORD (theme)` or `Add batchNN: N words`.
 If the user wants a release, `./release.sh vX.Y.Z`.
+
+## 8. Report
+
+End with every card as written — key, definition, English word, example,
+translation — and any gate warnings you left in place, so the user can
+read them without opening the files.

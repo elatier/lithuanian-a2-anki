@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install hunspell with the Lithuanian dictionary
-        run: sudo apt-get update -q && sudo apt-get install -y -q hunspell hunspell-lt
+      - name: Install hunspell (the Lithuanian dictionary is in data/hunspell/)
+        run: sudo apt-get update -q && sudo apt-get install -y -q hunspell
       - run: pip install -r requirements-dev.txt
       - name: Lint
         run: ruff check scripts tests

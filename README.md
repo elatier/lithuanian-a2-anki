@@ -94,10 +94,9 @@ Once per clone:
 ./setup.sh
 ```
 
-That creates `.venv`, installs the Python packages, and installs hunspell
-with the Lithuanian dictionary where it can (Homebrew or apt; on macOS it
-fetches LibreOffice's `lt_LT` files into `~/Library/Spelling`). By hand,
-the same is:
+That creates `.venv`, installs the Python packages, and installs the
+hunspell binary with Homebrew or apt. The Lithuanian dictionary is in the
+repo. By hand, the same is:
 
 ```bash
 python3 -m venv .venv
@@ -117,17 +116,11 @@ history and keeps the download small.
 `build_single.sh` uses `.venv` automatically, even when it is not activated.
 The other scripts run with whichever `python3` is active.
 
-Checking cards also needs **hunspell** with the Lithuanian dictionary.
-Building does not.
-
-- **Debian/Ubuntu:** `apt install hunspell hunspell-lt`
-- **macOS:** `brew install hunspell`. Homebrew has no Lithuanian dictionary, so
-  take `lt.aff` and `lt.dic` from
-  [LibreOffice/dictionaries](https://github.com/LibreOffice/dictionaries/tree/master/lt_LT)
-  and save them as `~/Library/Spelling/lt_LT.aff` and `lt_LT.dic`.
-
-If the dictionary is missing, the scripts stop with an error rather than
-passing everything.
+Checking cards also needs the **hunspell** binary (`brew install hunspell`
+or `apt install hunspell`). Building does not. The Lithuanian dictionary it
+uses is `data/hunspell/`, so nothing else has to be found or downloaded. If
+hunspell is missing, the scripts stop with an error rather than passing
+everything.
 
 ### Rebuilding the released deck
 
@@ -241,7 +234,7 @@ key    lt_def    en_word    en_def    lt_example    en_example    pos    [qualif
 ### Layout
 
 ```
-setup.sh          one-time setup: venv, packages, hunspell + lt_LT
+setup.sh          one-time setup: venv, packages, the hunspell binary
 build_single.sh   build the deck
 release.sh        build, check the numbers, tag and push
 scripts/          the pipeline (Python); paths.py says where everything lives
@@ -327,6 +320,7 @@ All in `data/`.
 | `audio/` | the recordings, four per card, and `.text_manifest.json`, which records what each clip says so that edited text is re-recorded |
 | `forms_cache.json` | cached Wiktionary paradigms used by the QA gate |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
+| `hunspell/` | the `lt_LT` spelling dictionary the QA gate runs, with its licence |
 
 ## Licence and reuse
 
@@ -338,6 +332,12 @@ The **scripts** in this repo are MIT-licensed — see `LICENSE`.
 **Inflected forms and glosses** are derived from **English Wiktionary**, which
 is CC BY-SA. That covers `forms_cache.json`, `data/cache/` and the paradigm
 columns.
+
+**The spelling dictionary** in `data/hunspell/` is the
+[ispell-lt](https://github.com/ispell-lt/ispell-lt) lexicon by Albertas
+Agejevas and contributors, redistributed under its BSD licence
+(`data/hunspell/COPYING`). It is used to check the cards and is not part of
+the deck.
 
 **The audio** was generated with the Lithuanian speech synthesiser operated by
 **UAB Intelektika** (`sinteze.intelektika.lt`, now `snekos-sinteze.lt`), voice
