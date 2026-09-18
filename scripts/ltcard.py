@@ -391,6 +391,11 @@ def kaikki_entries(word):
                 out.append(json.loads(line))
             except json.JSONDecodeError:
                 pass
+    if not out:
+        # A 200 with nothing parseable is an error page (proxy, captive
+        # portal, outage), not an answer. Caching it would record the word
+        # as absent for good.
+        return []
     cfile.write_text("\n".join(json.dumps(e, ensure_ascii=False)
                                 for e in out), encoding="utf-8")
     return out
@@ -412,12 +417,24 @@ def wikt_lt_tables(word):
     if r.status_code != 200:
         return []          # transient: do not cache
     soup = BeautifulSoup(r.text, "html.parser")
-    scope = soup
+    if not soup.find("h2"):
+        return []          # not a Wiktionary entry page: do not cache
     h2 = soup.find(lambda t: t.name == "h2"
                    and t.get("id", "").startswith("Lithuanian"))
-    if h2 and h2.parent and h2.parent.name == "section":
-        scope = h2.parent
-    tables = scope.find_all("table", class_="inflection-table")
+    if h2 is None:
+        # The page exists but has no Lithuanian entry. Falling back to the
+        # whole page would take another language's tables as Lithuanian.
+        tables = []
+    elif h2.parent and h2.parent.name == "section":
+        tables = h2.parent.find_all("table", class_="inflection-table")
+    else:
+        # unsectioned HTML: everything between this h2 and the next one
+        tables = []
+        for el in h2.find_all_next():
+            if el.name == "h2":
+                break
+            if el.name == "table" and "inflection-table" in (el.get("class") or []):
+                tables.append(el)
     # cache even when empty: "page exists but has no Lithuanian inflection
     # table" is a permanent answer too
     cfile.write_text("\n".join(str(t) for t in tables), encoding="utf-8")
@@ -551,6 +568,37 @@ def _alog(msg):
         AUDIO_LOG(msg)
 
 
+class BadAudio(ValueError):
+    """The synthesiser answered 200, but not with a usable MP3."""
+
+
+def _is_mp3(data):
+    # an ID3 tag, or an MPEG audio frame sync (11 set bits)
+    return data[:3] == b"ID3" or (len(data) > 1 and data[0] == 0xFF
+                                  and data[1] & 0xE0 == 0xE0)
+
+
+def _liepa_audio(r):
+    """The MP3 bytes in a LIEPA response, or BadAudio."""
+    import base64, binascii
+    try:
+        data = base64.b64decode(r.json()["audioAsString"])
+    except (ValueError, KeyError, TypeError, binascii.Error) as exc:
+        raise BadAudio(f"unreadable response: {r.text[:60]!r}") from exc
+    if len(data) < 256 or not _is_mp3(data):
+        raise BadAudio(f"not an MP3 ({len(data)} bytes)")
+    return data
+
+
+def _write_atomic(path, data):
+    """Write via a temp file, so an interrupted run never leaves a partial
+    clip that later passes for a finished one."""
+    path = Path(path)
+    tmp = path.with_name(path.name + ".part")
+    tmp.write_bytes(data)
+    tmp.replace(path)
+
+
 async def _tts_edge(text, path, voice):
     import edge_tts
     await edge_tts.Communicate(text, voice).save(str(path))
@@ -561,14 +609,14 @@ def make_audio(text, path, voice, engine="liepa", attempts=8, quota_wait=120):
 
     attempts / quota_wait let the caller own the retry policy. resume_audio.py
     passes attempts=1, quota_wait=0 so that IT does the waiting and logging,
-    one clip at a time; the defaults keep batch.py's old behaviour.
+    one clip at a time.
     """
     p = Path(path)
     if p.exists() and p.stat().st_size > 0:
         return
     if engine == "liepa":
-        import base64, time
-        last = None
+        import time
+        last = RuntimeError("LIEPA: no attempts made")
         for i in range(attempts):
             t0 = time.monotonic()
             try:
@@ -578,8 +626,8 @@ def make_audio(text, path, voice, engine="liepa", attempts=8, quota_wait=120):
                                   headers=HEADERS, timeout=LIEPA_TIMEOUT)
                 dt = time.monotonic() - t0
                 if r.status_code == 200:
-                    data = base64.b64decode(r.json()["audioAsString"])
-                    Path(path).write_bytes(data)
+                    data = _liepa_audio(r)
+                    _write_atomic(p, data)
                     _alog(f"POST {len(text):3d} ch -> 200 in {dt:5.2f}s, "
                           f"{len(data)/1024:.1f} KB  {text!r}")
                     time.sleep(0.3)      # be polite to the public service
@@ -598,6 +646,9 @@ def make_audio(text, path, voice, engine="liepa", attempts=8, quota_wait=120):
             except requests.Timeout as exc:
                 _alog(f"POST {len(text):3d} ch -> TIMEOUT after "
                       f"{LIEPA_TIMEOUT}s")
+                last = exc
+            except BadAudio as exc:
+                _alog(f"POST {len(text):3d} ch -> 200 but {exc}")
                 last = exc
             except requests.RequestException as exc:
                 _alog(f"POST {len(text):3d} ch -> {type(exc).__name__} in "

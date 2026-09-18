@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""resume_audio.py [batchN.tsv ...] — generate the remaining LIEPA clips
-politely, one at a time, and resume where it stopped.
+"""resume_audio.py [batchN.tsv ...] — record the missing or outdated LIEPA
+clips politely, one at a time, and resume where it stopped.
 
 The public synthesiser at sinteze.intelektika.lt rate-limits hard: a short
 burst is fine, sustained parallel load gets 403 "Quota reached" and then
@@ -8,19 +8,22 @@ connection resets. This walks the clips serially with a gap between calls and
 a long, patient backoff, so a full run just takes a while instead of failing.
 
 Every clip is written to media_tmp/ as soon as it arrives, and existing files
-are skipped, so interrupting this at any point loses nothing — rerun it.
+are skipped, so interrupting this at any point loses nothing — rerun it. A
+clip whose text has changed since it was recorded (a definition was edited)
+is re-recorded: media_tmp/.text_manifest.json records what each clip says.
+
+build_single.sh runs this before building, so you rarely need it directly.
 
     python3 scripts/resume_audio.py                               # every batch
     python3 scripts/resume_audio.py data/batches/batch12.tsv      # just one
 
-When it reports 0 missing, build the deck with:
-    ./build_single.sh --subdecks tema
 """
 import hashlib
 import json
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 import ltcard
 import paths
@@ -58,43 +61,24 @@ def text_key(s):
 
 
 def clips_for(defs_path):
-    """(text, path) for every clip a batch needs."""
+    """(text, path) for every clip a batch needs.
+
+    Runs ltcard's own card builder with the synthesiser swapped for a
+    recorder, so the clip names and texts are exactly the ones the deck will
+    reference. This used to re-derive them separately, and for four words it
+    picked a different part of speech than the builder (which honours the
+    row's pos column), so it recorded 16 clips no card ever used.
+    """
     defs = ltcard.load_defs(defs_path)
-    manual = ltcard.load_manual_forms()
     jobs = []
-    for key, d in defs.items():
-        # a key may be `headword#sense`; the clip hash uses the full key (so
-        # two senses get separate audio) but every lookup uses the headword,
-        # and the word clip speaks the qualified phrase, matching ltcard.py
-        word = d.get("headword") or key.split("#")[0]
-        qual = d.get("qualifier", "")
-        if word in manual:
-            kind = manual[word]["pos"]
-            forms = manual[word]["forms_line"]
-            canon = word
-        else:
-            entries = ltcard.kaikki_entries(word)
-            poses = {e.get("pos") for e in entries} & ltcard.POSES
-            kind = forms = canon = None
-            for t in ltcard.wikt_lt_tables(word):
-                k = ltcard.classify_table(t)
-                if k not in poses:
-                    continue
-                canon = ltcard.canonical(entries, k, word)
-                forms = (ltcard.noun_compact(t) if k == "noun"
-                         else ltcard.verb_compact(t, canon) if k == "verb"
-                         else f"{canon} / {ltcard.feminine(entries)}")
-                kind = k
-                break
-        if not forms:
-            continue
-        h = hashlib.md5(f"{key}:{kind}:{ltcard.AUDIO_TAG}".encode()).hexdigest()[:8]
-        jobs += [(f"{qual} {ltcard.strip_stress(canon)}".strip(),
-                  MEDIA / f"lt_{h}_w.mp3"),
-                 (ltcard.forms_clip_text(word, forms, manual),
-                  MEDIA / f"lt_{h}_f.mp3"),
-                 (d["lt_def"], MEDIA / f"lt_{h}_d.mp3"),
-                 (d["lt_example"], MEDIA / f"lt_{h}_e.mp3")]
+    real = ltcard.make_audio
+    ltcard.make_audio = lambda text, path, *a, **k: jobs.append(
+        (text, Path(path)))
+    try:
+        for key in defs:
+            ltcard.process_word(key, "astra", MEDIA, defs, [], [], [])
+    finally:
+        ltcard.make_audio = real
     return jobs
 
 
@@ -102,18 +86,21 @@ def log(msg):
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
 
 
-def main(paths):
-    ltcard.AUDIO_LOG = log          # trace every HTTP attempt into this log
-    log(f"scanning {len(paths)} batch file(s)…")
-    log(f"endpoint {ltcard.LIEPA_URL}  timeout {ltcard.LIEPA_TIMEOUT}s  "
-        f"voice astra  speed {ltcard.LIEPA_SPEED}")
+def plan(files, quiet=False):
+    """Work out which clips need recording.
+
+    Returns (todo, manifest, stale): todo is a list of (text, path) that are
+    missing or whose text has changed since they were recorded; stale clips
+    are deleted here so nothing can build them into a deck by mistake.
+    """
     man = load_manifest()
     todo, stale = [], 0
-    for n, p in enumerate(paths, 1):
+    for n, p in enumerate(files, 1):
         # The scan resolves every word's paradigm before a single clip is
         # fetched, and a word missing from the local caches costs a network
         # round trip. Without this line the script looks hung for minutes.
-        log(f"  scanning {p} ({n}/{len(paths)})…")
+        if not quiet:
+            log(f"  scanning {Path(p).name} ({n}/{len(files)})…")
         for text, path in clips_for(p):
             fresh = path.exists() and path.stat().st_size > 0
             if fresh and man.get(path.name) not in (None, text_key(text)):
@@ -125,15 +112,17 @@ def main(paths):
             else:
                 todo.append((text, path))
     save_manifest(man)
-    log(f"{len(todo)} clip(s) to generate"
-        + (f" ({stale} stale, text had changed)" if stale else "")
-        + f"; {len(man)} already done")
+    return todo, man, stale
+
+
+def record(todo, man, engine="liepa", voice="astra"):
+    """Synthesise every (text, path) in todo, politely. 0 = all done."""
     stalls = done = 0
     for i, (text, path) in enumerate(todo, 1):
         while True:
             try:
                 # attempts=1/quota_wait=0: this loop owns retries and pacing
-                ltcard.make_audio(text, path, "astra", "liepa",
+                ltcard.make_audio(text, path, voice, engine,
                                   attempts=1, quota_wait=0)
                 man[path.name] = text_key(text)
                 done += 1
@@ -142,20 +131,38 @@ def main(paths):
             except Exception as exc:
                 stalls += 1
                 if stalls >= MAX_STALLS:
-                    log(f"throttled {stalls}x in a row — stopping at "
+                    log(f"failed {stalls}x in a row — stopping at "
                         f"{done}/{len(todo)}. Rerun later; nothing is lost.")
                     log(f"last error: {exc}")
                     save_manifest(man)
                     return 1
-                log(f"  throttled ({stalls}/{MAX_STALLS}) at "
-                    f"{done}/{len(todo)}, waiting {BACKOFF}s…")
+                log(f"  failed ({stalls}/{MAX_STALLS}) at "
+                    f"{done}/{len(todo)}: {exc}; waiting {BACKOFF}s…")
                 time.sleep(BACKOFF)
         if i % 10 == 0:
             log(f"--- {i}/{len(todo)} done")
+            save_manifest(man)
         time.sleep(GAP)
     save_manifest(man)
-    log(f"DONE — {done} new clip(s), nothing left to generate")
     return 0
+
+
+def main(files, engine="liepa", voice="astra", quiet=False):
+    ltcard.AUDIO_LOG = log          # trace every HTTP attempt into this log
+    if not quiet:
+        log(f"scanning {len(files)} batch file(s)…")
+    todo, man, stale = plan(files, quiet)
+    log(f"{len(todo)} clip(s) to record"
+        + (f" ({stale} stale, text had changed)" if stale else "")
+        + f"; {len(man)} already done")
+    if not todo:
+        return 0
+    log(f"endpoint {ltcard.LIEPA_URL}  timeout {ltcard.LIEPA_TIMEOUT}s  "
+        f"voice {voice}  speed {ltcard.LIEPA_SPEED}")
+    rc = record(todo, man, engine, voice)
+    if rc == 0:
+        log(f"DONE — {len(todo)} new clip(s), nothing left to record")
+    return rc
 
 
 if __name__ == "__main__":

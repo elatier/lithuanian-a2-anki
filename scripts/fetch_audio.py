@@ -26,7 +26,7 @@ import paths
 
 URL = ("https://github.com/elatier/lithuanian-a2-anki/releases/download/"
        "v1.0.0/lietuviu_A2_audio.zip")
-SHA256 = "8f7eadd1ac818bb99b4d097acc0f02824d5c5aff170b51961d8252f269e5c0d6"
+SHA256 = "59c1e74b89fda9d153cbbb354c981ced0061812b7bea1d448ccf0139ad88e8e7"
 MANIFEST = ".text_manifest.json"
 
 
@@ -40,7 +40,7 @@ def sha256(path):
 
 def download(url, dest):
     print(f"downloading {url}", flush=True)
-    with urllib.request.urlopen(url) as r, open(dest, "wb") as f:
+    with urllib.request.urlopen(url, timeout=60) as r, open(dest, "wb") as f:
         total = int(r.headers.get("Content-Length") or 0)
         done = 0
         while chunk := r.read(1 << 20):

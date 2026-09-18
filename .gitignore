@@ -10,6 +10,7 @@
 !LICENSE
 !LIEPA_AUDIO_LICENCE.md
 !requirements.txt
+!requirements-dev.txt
 !build_single.sh
 
 # --- site (GitHub Pages) ---
@@ -19,6 +20,8 @@
 # --- pipeline ---
 !scripts/
 !scripts/*.py
+!tests/
+!tests/*.py
 
 # --- deck source ---
 !data/

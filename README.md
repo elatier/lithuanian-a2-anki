@@ -89,17 +89,25 @@ a rebuild does not have to synthesise any audio.
 
 ### Setting up
 
+Once per clone:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # the build needs only requirements.txt
+python3 scripts/fetch_audio.py        # the 6,372 published clips, ~115 MB
 ```
+
+`fetch_audio.py` is what saves you from re-synthesising the whole deck.
+It downloads the recordings from the release into `media_tmp/`, checks the
+download's SHA-256, and never overwrites a clip you already have. From then
+on, only the clips for words you add or edit are ever recorded.
 
 `build_single.sh` uses `.venv` automatically, even when it is not activated.
 The other scripts run with whichever `python3` is active.
 
-The QA scripts, `verify_defs.py` and `check_forms.py`, also need **hunspell**
-with the Lithuanian dictionary. Building the deck does not.
+Checking cards also needs **hunspell** with the Lithuanian dictionary.
+Building does not.
 
 - **Debian/Ubuntu:** `apt install hunspell hunspell-lt`
 - **macOS:** `brew install hunspell`. Homebrew has no Lithuanian dictionary, so
@@ -113,35 +121,47 @@ passing everything.
 ### Rebuilding the released deck
 
 ```bash
-python3 scripts/fetch_audio.py    # the 6,372 clips, ~115 MB, into media_tmp/
 ./build_single.sh                 # -> decks/lietuviu_A2.apkg
 ```
 
-The result has the same notes, cards, subdecks and audio as the release.
-Because the note IDs are stable, importing it over an existing copy updates
-the cards in place. `./build_single.sh --no-fetch` builds without calling the
-synthesiser at all; any clip that is missing is left out of the deck.
+After `fetch_audio.py`, this builds the same notes, cards, subdecks and audio
+as the release, offline, in about ten seconds. The note IDs are stable, so
+importing it over an existing copy updates the cards in place.
+
+Before building, `build_single.sh` records any clip that is missing or whose
+text has changed, and only those. `--no-fetch` never contacts the synthesiser:
+missing clips are left off their cards.
 
 ### Adding or changing a word
 
-1. **Edit the card** in a `data/batches/batch*.tsv` file, or start a new
-   batch. See [the card format](#the-card-format) below.
-2. **Give it a theme**: the headword must be listed in `data/a2_zodziai_v2.txt`
-   under one of the themes in `data/THEMES.md`. Otherwise it is tagged
-   `tema::be-temos` and lands outside the theme subdecks.
-3. **Inflected forms** come from Wiktionary. If Wiktionary has no table for
-   the word, write the paradigm into `data/manual_forms.tsv`.
-   `python3 scripts/gen_forms.py WORD POS` drafts a line for regular words.
-   Then run `python3 scripts/check_forms.py` to spell-check every form, and
-   `python3 scripts/apply_accents.py` to add the stress marks.
-4. **Check it**: `python3 scripts/verify_defs.py` runs the QA gate over every
-   batch. Pass it one file to check just that batch. Run
-   `python3 scripts/root_leak.py data/batches/batchN.tsv` to catch definitions
-   that give the answer away through a related word.
-5. **Record the audio**: `python3 scripts/resume_audio.py` synthesises only
-   what is missing. That includes clips whose text changed: it keeps a
-   manifest of what each clip says. It is slow, about 1,250 clips an hour.
-6. **Build**: `./build_single.sh`.
+1. **Write the card**: a row in a `data/batches/batch*.tsv` file, or a new
+   batch file. See [the card format](#the-card-format) below.
+2. **Give it a theme**: list the headword under a theme heading in
+   `data/a2_zodziai_v2.txt` (the themes are in `data/THEMES.md`).
+3. **Check it and record it**:
+
+   ```bash
+   python3 scripts/add_word.py slėnis
+   ```
+
+   This finds the word's rows and checks its theme. It runs the QA gate and
+   the root-leak check on those rows only. If they pass, it records the clips
+   that are new or whose text changed: four per card, a few seconds each.
+   Nothing is recorded while a check fails. Pass several words at once, or
+   `--no-audio` to only check.
+4. **Build**: `./build_single.sh`.
+5. **Commit** the card, and any new files under `data/cache/`: the dictionary
+   lookups for the new word.
+
+If the QA gate reports no inflection table, Wiktionary has none for the word.
+Write its paradigm into `data/manual_forms.tsv` instead:
+
+1. `python3 scripts/gen_forms.py WORD POS` drafts the line for a regular word.
+2. `python3 scripts/check_forms.py` spell-checks every form.
+3. `python3 scripts/apply_accents.py` adds the stress marks.
+
+Before a release, `python3 scripts/verify_defs.py` with no arguments checks
+every batch.
 
 ### The card format
 
@@ -164,6 +184,7 @@ key    lt_def    en_word    en_def    lt_example    en_example    pos    [qualif
 ```
 build_single.sh   build the deck
 scripts/          the pipeline (Python); paths.py says where everything lives
+tests/            pytest suite; no network needed
 data/             deck source: word list, paradigms, accents, caches
 data/batches/     batch*.tsv, the cards themselves
 docs/             the deck page (GitHub Pages)
@@ -180,19 +201,39 @@ All in `scripts/`.
 | | |
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
+| `add_word.py` | checks new or edited words and records only their audio |
 | `fetch_audio.py` | downloads the published recordings into `media_tmp/` |
-| `resume_audio.py` | synthesises missing or outdated clips (LIEPA, rate-limited, resumable) |
+| `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |
 | `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD |
 | `root_leak.py` | catches definitions that share a root with their headword |
 | `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
 | `gen_forms.py` | drafts a `manual_forms.tsv` line for a regular word |
 | `apply_accents.py` | places stress marks on headwords and every displayed form |
 | `scan_forms_lines.py` | audits the inflection line on every card |
-| `invalidate_audio.py` | forces specific words to be re-recorded |
+| `invalidate_audio.py` | forces specific words to be re-recorded, e.g. when a clip sounds wrong |
 | `build_cache.py` | pre-fetches Wiktionary paradigms into `forms_cache.json` |
 | `ltcard.py` | the card builder library: note type, templates, CSS, Wiktionary lookups, TTS |
 | `paths.py`, `spell.py` | file locations; the hunspell wrapper |
 | `theme_preview.py`, `themes*_candidates.py`, `pron_preview.py` | design history: render real cards under candidate stylings; how the current theme was chosen |
+
+### Tests
+
+```bash
+python3 -m pytest
+```
+
+The tests never touch the network. The services are faked, including slow,
+throttled and broken responses: LIEPA timing out, answering 403 "Quota
+reached", or answering 200 with an error page, empty audio or bytes that
+are not MP3. kaikki.org and Wiktionary are faked too, returning outages,
+error pages, and pages with no Lithuanian entry.
+
+The tests check that:
+
+- a bad answer is never saved as a clip or cached as a fact;
+- retries back off and give up instead of looping;
+- an interrupted download never leaves a partial clip behind;
+- the whole deck builds with the network refused.
 
 ### The data
 
