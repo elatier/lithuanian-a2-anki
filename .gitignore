@@ -60,3 +60,4 @@
 !.devcontainer/*.json
 !scripts/design/
 !scripts/design/*.py
+!ADDING_WORDS.md

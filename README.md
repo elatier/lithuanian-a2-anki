@@ -138,64 +138,27 @@ missing clips are left off their cards.
 
 ### Adding words
 
-Three ways, by how much you want installed.
+**[ADDING_WORDS.md](ADDING_WORDS.md)** is the guide. In short, a card is one
+row in a batch file, and only four of its columns are written by a person
+or a model: the Lithuanian definition, its English rendering, an example
+sentence and its translation. Everything else — forms, stress marks,
+audio, tags — comes from scripts, and a QA gate checks every row before
+anything is recorded.
 
-**Nothing installed.** Add a row to a `data/batches/batch*.tsv` file on
-GitHub (one row per card, [format below](#the-card-format)) and open a
-pull request. The CI workflow runs the QA gate on it and the report is in
-the checks. The maintainer records the audio and releases.
+- **With Claude Code:** `/add-word slėnis`, or `/add-word words.tsv` for a
+  batch. The model drafts the cards, passes the gate, records, builds and
+  commits, and ends with every card written out for you to read.
+- **Without:** three commands and the writing in between.
+  `python3 scripts/add_word.py slėnis --new --theme 03` prints a drafting
+  packet and scaffolds the row; you fill the four columns;
+  `python3 scripts/add_word.py slėnis` checks, records, builds and
+  refreshes the numbers. `--new --list words.tsv` and `--batch batch33`
+  do the same for a batch.
+- **Nothing installed:** add the row on GitHub and open a pull request;
+  CI runs the gate.
 
-**In Claude Code.** `/add-word slėnis`, or `/add-word words.tsv` for a
-batch, walks the steps below with the model drafting the cards. It stops
-once for your approval before anything is recorded. Works locally or in a
-Codespace.
-
-**By hand.** Three steps: start the row, write it, finish it.
-
-1. **Start.** `python3 scripts/add_word.py slėnis --new --theme 03` prints
-   the drafting packet (what Wiktionary says the word means and how it
-   inflects, how the theme's cards read, the cards that already share the
-   English answer, the allowed vocabulary) and appends a row with the key,
-   part of speech, theme and gloss filled in. Without `--theme` it prints
-   the packet and the list of themes and writes nothing.
-2. **Write** `lt_def`, `en_def`, `lt_example`, `en_example` in the row,
-   following [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md).
-3. **Finish.** `python3 scripts/add_word.py slėnis` checks the row (the QA
-   gate), records its four clips, rebuilds the deck
-   and refreshes the numbers in the docs. Nothing is recorded while a check
-   fails; `--no-audio` only checks. Then commit the row, the clips in
-   `data/audio/` (with `.text_manifest.json`), any new files under
-   `data/cache/`, and the docs.
-
-A batch of words is the same three steps on a file. Put the words in
-`words.tsv`, one `word<TAB>theme` per line (`<TAB>pos` if Wiktionary has
-more than one), then:
-
-```bash
-python3 scripts/add_word.py --new --list words.tsv
-```
-
-creates the next `data/batches/batchNN.tsv` with a prefilled row per word.
-Write the columns, then:
-
-```bash
-python3 scripts/add_word.py --batch batch33
-```
-
-checks, records, builds and refreshes the numbers for the whole batch.
-`out/review.txt`, written by the gate, shows every card side by side for a
-read-through.
-
-If the QA gate reports no inflection table, Wiktionary has none for the word.
-Write its paradigm into `data/manual_forms.tsv` instead:
-
-1. `python3 scripts/forms.py draft WORD POS` prints the row for a regular word.
-2. `python3 scripts/forms.py check` spell-checks every form.
-3. `python3 scripts/forms.py accent` adds the stress marks.
-
-Before a release, `python3 scripts/verify_defs.py` with no arguments checks
-every batch. Every push runs the same checks on GitHub Actions: lint, the
-tests, the gate, and an offline build (`.github/workflows/ci.yml`).
+Words Wiktionary has no table for, second senses, fixing a card, and what
+each gate code means are all in the guide.
 
 ### Releasing
 
@@ -234,6 +197,7 @@ key    lt_def    en_word    en_def    lt_example    en_example    pos    theme  
 ### Layout
 
 ```
+ADDING_WORDS.md   how to add or fix a card, with Claude Code or without
 setup.sh          one-time setup: venv, packages, the hunspell binary
 build_single.sh   build the deck
 release.sh        build, check the numbers, tag and push
