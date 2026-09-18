@@ -1,33 +1,32 @@
-#!/usr/bin/env python3
-"""add_word.py — add or fix words in the deck: start, check, record, build.
+"""add_word.py WORD — do the next right thing for a word: start its row,
+or check, record and build it.
 
-Start a word:
+A word with no row yet:
 
-    python3 scripts/add_word.py lentyna --new --theme 02
+    python3 scripts/add_word.py lentyna              # the drafting packet; writes nothing
+    python3 scripts/add_word.py lentyna --theme 02   # ...and scaffold the row
 
-prints the drafting packet — what Wiktionary says the word means and how it
-inflects, how the theme's cards read, which cards already share the English
-answer, the allowed vocabulary — and appends a row to the newest batch file
-with the key, part of speech, theme and Wiktionary's first gloss filled in.
-Without --theme it prints the packet, with the list of themes, and writes
-nothing. Then fill lt_def, en_def, lt_example, en_example in the row
-(data/DRAFTING_GUIDE.md).
+The packet is what Wiktionary says the word means and how it inflects, how
+the theme's cards read, which cards already share the English answer, and
+the allowed vocabulary. With --theme, a row is appended to the newest batch
+file with the key, part of speech, theme and Wiktionary's first gloss
+filled in. Then write lt_def, en_def, lt_example, en_example in the row
+(data/DRAFTING_GUIDE.md) — or skip all this and write the whole row by hand.
 
-Finish it:
+A word with a row:
 
     python3 scripts/add_word.py lentyna
 
-runs the QA gate on the word's rows, records the
-clips that are missing or whose text changed (four per card, a few seconds
-each), rebuilds the deck and refreshes the numbers in the docs. Nothing is
-recorded while a hard check fails, so a typo never costs a recording. Then
-commit: the row, the clips in data/audio/, new files under data/cache/,
-and the docs.
+runs the QA gate on its rows, records the clips that are missing or whose
+text changed (four per card, a few seconds each), rebuilds the deck and
+refreshes the numbers in the docs. Nothing is recorded while a hard check
+fails, so a typo never costs a recording. Then commit: the row, the clips
+in data/audio/, new files under data/cache/, and the docs.
 
 A batch:
 
-    python3 scripts/add_word.py --new --list words.tsv    # word<TAB>theme[<TAB>pos]
-    python3 scripts/add_word.py --batch batch33           # finish every word in it
+    python3 scripts/add_word.py --list words.tsv     # word<TAB>theme[<TAB>pos] per line
+    python3 scripts/add_word.py --batch batch33      # finish every word in it
 
 --list scaffolds every word into a NEW batch file (the next number), so the
 batch can be checked, recorded and built as one unit.
@@ -36,7 +35,7 @@ batch can be checked, recorded and built as one unit.
     --no-build   check and record, but do not rebuild the deck
     --pos        noun/verb/adj; needed when Wiktionary has more than one
     --theme      a theme from data/THEMES.md: "02-pastatai-ir-namai", "02", "pastatai"
-    --batch      with --new: the batch file to append to (default: the newest);
+    --batch      with --list: the batch file to append to (default: a new one);
                  alone: finish every word in that batch file
 """
 import argparse
@@ -118,12 +117,13 @@ def scaffold(word, pos, theme, batch, quiet=False):
               f"sense keyed {word}#sense (README, 'The card format').")
         return 1
     theme = resolve_theme(theme) if theme else None
-    if not quiet:
-        draft_packet.packet(word, theme, next_steps=False)
-        print()
+    # a batch gets the compact packet: what the word means and how it
+    # inflects, and the cards that share its answer; not the theme list
+    draft_packet.packet(word, theme, next_steps=False, compact=quiet)
+    print()
     if not theme:
-        print(f"{word}: choose a theme from the list above and rerun with "
-              f"--theme; nothing written.")
+        print(f"{word}: no row yet. Choose a theme from the list above and "
+              f"rerun with --theme to scaffold one; nothing written.")
         return 1
     entries = ltcard.kaikki_entries(word)
     poses = sorted({e.get("pos") for e in entries} & ltcard.POSES)
@@ -135,6 +135,7 @@ def scaffold(word, pos, theme, batch, quiet=False):
             return 1
         pos = poses[0]
     gloss = ltcard.wikt_gloss(entries, pos, n=1) if pos in poses else ""
+    gloss = re.sub(r"\([^)]*\)", "", gloss)          # "(an official …)" is guidance
     gloss = re.sub(r"\s+", " ", re.split(r"[;,]", gloss)[0]).strip()
     if pos == "verb" and gloss and not gloss.startswith("to "):
         gloss = "to " + gloss
@@ -161,12 +162,14 @@ def scaffold_list(path, pos, batch):
     batch = batch or next_batch_name()
     for _, theme, _ in todo:
         resolve_theme(theme)            # every theme must resolve before any write
-    rc = 0
-    for word, theme, p in todo:
-        rc |= scaffold(word, p or pos, theme, batch, quiet=True)
-    print(f"\n{len(todo)} word(s) scaffolded into {batch}.tsv. Fill the "
-          f"columns, then:\n    python3 scripts/add_word.py --batch {batch}")
-    return rc
+    done = [word for word, theme, p in todo
+            if scaffold(word, p or pos, theme, batch, quiet=True) == 0]
+    if not done:
+        print("\nnothing scaffolded; see above.")
+        return 1
+    print(f"\n{len(done)} of {len(todo)} word(s) scaffolded into {batch}.tsv. "
+          f"Write the columns, then:\n    python3 scripts/add_word.py --batch {batch}")
+    return 0 if len(done) == len(todo) else 1
 
 
 # ------------------------------------------------------------- finish ----
@@ -177,10 +180,7 @@ def finish(words, no_audio=False, no_build=False):
     for w in words:
         found = rows_for(w)
         if not found:
-            problems.append(
-                f"{w}: no card. Start one with `add_word.py {w} --new "
-                f"--theme ...`, or add a row to a data/batches/batch*.tsv "
-                f"file:\n    {TEMPLATE}")
+            problems.append(f"{w}: no row.")
             continue
         for f, _ in found:
             print(f"{w}: {f.name}")
@@ -226,14 +226,13 @@ def finish(words, no_audio=False, no_build=False):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("words", nargs="*")
-    ap.add_argument("--new", action="store_true",
-                    help="start a word that has no card yet")
     ap.add_argument("--list", metavar="FILE",
-                    help="with --new: every `word<TAB>theme[<TAB>pos]` line "
-                         "of FILE into a new batch file")
+                    help="scaffold every `word<TAB>theme[<TAB>pos]` line of "
+                         "FILE into a new batch file")
     ap.add_argument("--pos", choices=POS_CHOICES)
-    ap.add_argument("--theme", help="theme from data/THEMES.md, full or partial")
-    ap.add_argument("--batch", help="batch file: append to it (--new) or "
+    ap.add_argument("--theme", help="theme from data/THEMES.md, full or partial; "
+                                    "scaffolds a row for a word that has none")
+    ap.add_argument("--batch", help="batch file: append to it (--list) or "
                                     "finish every word in it")
     ap.add_argument("--no-audio", action="store_true", help="check only")
     ap.add_argument("--no-build", action="store_true",
@@ -241,20 +240,24 @@ def main():
     args = ap.parse_args()
     words = [w.strip().lower() for w in args.words]
 
-    if args.new:
-        if args.list:
-            return scaffold_list(args.list, args.pos, args.batch)
-        if not words:
-            ap.error("--new needs a word, or --list FILE")
-        rc = 0
-        for w in words:
-            rc |= scaffold(w, args.pos, args.theme, args.batch)
-        return rc
+    if args.list:
+        return scaffold_list(args.list, args.pos, args.batch)
     if args.batch and not words:
         words = headwords_in(args.batch)
     if not words:
-        ap.error("give a word, --batch NAME, or --new")
-    return finish(words, args.no_audio, args.no_build)
+        ap.error("give a word, --batch NAME, or --list FILE")
+
+    # the state of each word decides: no row -> start one; a row -> finish it
+    new = [w for w in words if not rows_for(w)]
+    have = [w for w in words if w not in new]
+    rc = 0
+    for w in new:
+        rc |= scaffold(w, args.pos, args.theme, args.batch)
+    if have:
+        if new:
+            print(f"\n--- {', '.join(have)}: already have rows; checking")
+        rc |= finish(have, args.no_audio, args.no_build)
+    return rc
 
 
 if __name__ == "__main__":

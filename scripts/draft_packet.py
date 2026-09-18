@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """draft_packet.py WORD [--theme SLUG] [--vocab] — everything a drafter needs
-to write the card for WORD, on one screen. `add_word.py WORD --new` prints
-the same before it scaffolds the row; this is the packet on its own.
+to write the card for WORD, on one screen. `add_word.py WORD` prints the
+same for a word with no row; this is the packet on its own.
 
 Whoever writes the row — a person, or Claude via the add-word skill — starts
 from the same facts: what Wiktionary says the word means and how it inflects,
@@ -74,8 +74,10 @@ def gloss_heads(en_word):
     return out
 
 
-def packet(word, theme=None, vocab=False, next_steps=True):
-    """Print the packet. `theme` is a column-8 slug (resolved), or None."""
+def packet(word, theme=None, vocab=False, next_steps=True, compact=False):
+    """Print the packet. `theme` is a column-8 slug (resolved), or None.
+    `compact` leaves out the theme list, the neighbouring cards and the
+    vocabulary note — what a batch of words would repeat."""
     word = word.strip().lower()
     manual = ltcard.load_manual_forms()
     themes = ltcard.load_themes()
@@ -147,9 +149,13 @@ def packet(word, theme=None, vocab=False, next_steps=True):
         p(f"    forms: {' '.join(sorted(m['forms']))}")
 
     # --- theme
-    p("\n--- theme")
+    if compact:
+        theme = themes.get(word) or (theme_map.get(theme) if theme else None)
+    p("\n--- theme") if not compact else None
     theme = themes.get(word) or (theme_map.get(theme) if theme else None)
-    if word in themes:
+    if compact:
+        pass
+    elif word in themes:
         p(f"  the card's row says {theme}")
     elif theme:
         p(f"  chosen: {theme}")
@@ -160,7 +166,7 @@ def packet(word, theme=None, vocab=False, next_steps=True):
             p(f"    {tag.split('::', 1)[1]:26} {covers}")
 
     # --- neighbours: how cards in this theme read
-    if theme:
+    if theme and not compact:
         want = poses[0] if poses else (manual.get(word) or {}).get("pos")
         rows = [(k, d) for _, k, d in all_cards()
                 if themes.get(k.split("#")[0]) == theme]
@@ -180,6 +186,8 @@ def packet(word, theme=None, vocab=False, next_steps=True):
             p(f"  {k}\t{d['en_word']}\t{d['lt_def']}")
 
     # --- vocabulary
+    if compact:
+        return 0
     lemmas = known_lemmas()
     p(f"\n--- vocabulary: {len(lemmas)} lemmas may appear in the definition "
       f"and example (their inflected forms too); anything else is an A2 "
@@ -197,7 +205,7 @@ def packet(word, theme=None, vocab=False, next_steps=True):
         p(f"  edit the row in {existing[0][0]}, then")
         p(f"  python3 scripts/add_word.py {word}          # check, record, build")
         return 0
-    p(f"  python3 scripts/add_word.py {word} --new"
+    p(f"  python3 scripts/add_word.py {word}"
       + (f" --pos {poses[0]}" if len(poses) == 1 else " --pos POS")
       + (f" --theme {theme.split('::')[1]}" if theme else " --theme SLUG")
       + "    # scaffolds the row")

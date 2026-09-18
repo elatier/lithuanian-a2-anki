@@ -110,9 +110,15 @@ def test_add_word_records_nothing_when_qa_fails(monkeypatch, one_batch,
     assert spoken == []
 
 
-def test_add_word_unknown_word(monkeypatch, one_batch, capsys):
+def test_add_word_unknown_word_shows_the_packet_and_writes_nothing(
+        monkeypatch, one_batch, no_network, capsys):
+    monkeypatch.setattr(ltcard, "kaikki_entries", lambda w: [])
+    monkeypatch.setattr(ltcard, "wikt_lt_tables", lambda w: [])
+    f, _, _ = one_batch
     assert run_add_word(monkeypatch, "nėratokio") == 1
-    assert "no card" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "no entry" in out and "no row yet" in out
+    assert not f.exists() or "nėratokio" not in f.read_text(encoding="utf-8")
 
 
 # ------------------------------------------------------------------- build --

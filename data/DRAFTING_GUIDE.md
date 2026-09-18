@@ -10,7 +10,7 @@ Check as you go:
 python3 scripts/add_word.py WORD --no-audio
 ```
 
-Start a row with `python3 scripts/add_word.py WORD --new --theme SLUG`: it
+Start a row with `python3 scripts/add_word.py WORD --theme SLUG`: it
 prints the drafting packet and fills in everything but the four text
 columns.
 

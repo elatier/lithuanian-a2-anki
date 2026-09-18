@@ -24,18 +24,18 @@ dictionary is in the repo). Use `.venv/bin/python` for every script below.
 ## 1. Start each word
 
 ```bash
-.venv/bin/python scripts/add_word.py WORD --new
+.venv/bin/python scripts/add_word.py WORD
 ```
 
-Without `--theme` this prints the drafting packet and the list of themes
-and writes nothing. Read all of it: whether the word already has a card,
+For a word with no row this prints the drafting packet and the list of
+themes and writes nothing. Read all of it: whether the word already has a card,
 what Wiktionary says it means and how it inflects, and which cards already
 answer with the same English word. Then choose one theme, following
 `data/THEMES.md` (prefer the concrete situation a learner meets the word
 in; if the user's list gives themes, use them), and scaffold:
 
 ```bash
-.venv/bin/python scripts/add_word.py WORD --new --theme SLUG [--pos POS]
+.venv/bin/python scripts/add_word.py WORD --theme SLUG [--pos POS]
 ```
 
 That appends a row to the newest batch file with the key, part of speech,
@@ -43,11 +43,11 @@ theme and gloss filled in. `--pos` is needed only when Wiktionary has more
 than one part of speech.
 
 A batch: write `out/words.tsv` with one `word<TAB>theme[<TAB>pos]` line per
-word (or use the user's file; run `add_word.py WORD --new` for any word
-whose theme you need to look at first), then
+word (or use the user's file; run `add_word.py WORD` for any word whose
+theme you need to look at first), then
 
 ```bash
-.venv/bin/python scripts/add_word.py --new --list out/words.tsv
+.venv/bin/python scripts/add_word.py --list out/words.tsv
 ```
 
 which creates the next `data/batches/batchNN.tsv` with a prefilled row per
