@@ -1,0 +1,66 @@
+/* Theme: Švarus, set in Charter.
+   Lithuanian is serif, English is sans and always italic, so the two are
+   never mistaken for each other at a glance — including inside hints.
+   Charter is on iOS and macOS and was drawn for low-resolution screens, so
+   the stacked kirtis marks (i + dot + tilde) stay legible at 19px. The rest
+   of the stack is what a device without it will reach for. */
+.card { font-family: "Charter", "Bitstream Charter", "Iowan Old Style",
+        Georgia, "Times New Roman", serif; font-size: 22px;
+        text-align: center; color: #23252b; background: #fbfbfa;
+        line-height: 1.45; }
+
+.word    { font-size: 34px; font-weight: 700; letter-spacing: -.01em; }
+.qual    { font-weight: 400; color: #8a8f98; }
+.forms   { font-size: 19px; color: #5b6068; margin: 6px 0; }
+.lt      { font-size: 21px; margin: 12px 0; }
+.formsbig{ font-size: 27px; font-weight: 700; margin: 8px 0; }
+
+/* Word card. The headword carries the front and reappears unchanged above
+   the rule, so the question still reads the same after answering; the
+   English answer below is the one thing set in italic bold. */
+.forms-q { font-size: 23px; font-weight: 600; color: #3c414a; margin: 10px 0; }
+/* the word answered on card 2 — the forms line above already spells it out,
+   so it closes the card quietly rather than shouting the answer twice */
+.word-a  { font-size: 24px; font-weight: 400; color: #8a8f98; margin: 12px 0; }
+b { font-weight: 700; }
+hr#answer { border: none; border-top: 1px solid #e2e2df; margin: 16px 0; }
+
+/* Everything English, in the sans face */
+.en      { font-size: 20px; color: #4a4f57; margin: 8px 0; font-style: italic;
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+           sans-serif; }
+.small   { font-size: 19px; margin-top: 12px; font-style: italic;
+           color: #6b7078; font-family: -apple-system, BlinkMacSystemFont,
+           "Segoe UI", Roboto, sans-serif; }
+.en-main { font-size: 27px; font-weight: 700; font-style: italic;
+           color: #1a5f7a; margin: 14px 0;
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+           sans-serif; }
+a.hint   { color: #1a5f7a; font-size: 19px; text-decoration: none;
+           font-style: normal; font-family: -apple-system, BlinkMacSystemFont,
+           "Segoe UI", Roboto, sans-serif; }
+
+/* Pronoun paradigm, shown on the backs of the seven personal-pronoun cards */
+.par    { margin: 14px auto; border-collapse: collapse; font-size: 19px; }
+.par th { color: #9aa0a8; font-weight: 400; text-align: right; font-size: 17px;
+          padding: 3px 12px 3px 0; }
+.par td { text-align: left; padding: 3px 18px 3px 0; }
+.par th.hd { color: #9aa0a8; text-align: left; font-size: 15px;
+             letter-spacing: .06em; text-transform: uppercase;
+             padding-top: 10px; }
+
+/* Anki puts `nightMode` on the same element as `card`, so a descendant
+   selector reaches the card's own children. Without this block the deck
+   stays dark-on-light in Anki's dark mode. */
+.nightMode.card, .nightMode .card { color: #e4e5e7; background: #26272b; }
+.nightMode .qual,
+.nightMode .word-a   { color: #85898f; }
+.nightMode .forms    { color: #a8acb3; }
+.nightMode .forms-q  { color: #c8ccd2; }
+.nightMode .en       { color: #b8bcc2; }
+.nightMode .small    { color: #9ea2a9; }
+.nightMode .en-main,
+.nightMode a.hint    { color: #6fb6d4; }
+.nightMode hr#answer { border-top-color: #3a3c42; }
+.nightMode .par th,
+.nightMode .par th.hd { color: #8b9097; }

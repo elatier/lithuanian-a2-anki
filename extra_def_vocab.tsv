@@ -1,0 +1,184 @@
+# Vocabulary allowed INSIDE definitions and examples but not taught as cards.
+#
+# The deck's definitions were originally restricted to the A2 word list. That
+# restriction produced definitions that were gate-legal but ambiguous — in
+# ~20 synonym pairs both definitions fitted both words, so the definition->word
+# card had two right answers. The review pass lifted the restriction where a
+# non-A2 word buys real distinctness: sąnarys instead of "kūno vieta, kur ranka
+# sukasi", rankovė instead of "be rankų", kruopos instead of "iš pieno".
+#
+# Every word here is a deliberate, single, well-chosen content word inside an
+# otherwise A2 definition. None of them gets a card; the learner meets them
+# only as supporting vocabulary. Every form listed is hunspell lt_LT verified
+# (the gate's SPELL check runs over the same text).
+#
+# Format: lemma <TAB> space-separated forms used in the deck.
+# verify_defs.py folds this into the allowed-vocabulary set.
+apatinis	apatinė
+atvažiuoti	atvažiuos
+atvykti	atvyksta
+cha	cha
+darbdavys	darbdavys
+dulkės	dulkių
+duobė	duobė
+elgtis	elgtis
+galas	galo gale
+galūnė	galūnes
+garsas	garsą
+garsiai	garsiai
+gaudyti	gaudo
+judėti	judėti judantį
+jėga	jėgų
+kamuoliukas	kamuoliuką
+keturkampis	keturkampis
+kitas	kitu
+kotas	kotu
+kruopos	kruopų
+laikytis	laikytis
+malka	malkos malkas
+mautis	maunamės
+minti	miname
+miręs	mirusių
+mokslas	mokslo
+niekas	niekas
+nuolat	nuolat
+nuomonė	nuomonę
+oficialiai	oficialiai
+pagaliau	pagaliau
+pailsėti	pailsėtum
+pasakyti	pasakyti
+pasaulis	pasaulyje
+pasidengti	pasidengia
+pasiskolinti	pasiskolinęs
+pats	patį
+paukštis	paukštis
+pavogti	pavogė
+petys	pečių
+plunksna	plunksnomis
+pomėgis	pomėgis
+prasidėti	prasideda
+priemonė	priemonė
+pykti	pyksta
+rankovė	rankovių
+renginys	renginys
+rodyti	rodomi
+skystis	skystis
+spardyti	spardo
+staiga	staiga
+straipsnis	straipsnį
+susirinkti	susirenka
+sustoti	sustoti
+sutvarkyti	sutvarkyti
+suvalgyti	suvalgiau
+tas	tam
+tarnauti	tarnauja
+trumpinti	trumpina
+tyliai	tyliai
+užsidėti	užsideda
+vabzdys	vabzdys
+veiksmažodis	veiksmažodis veiksmažodžių
+vidus	viduje
+vienodai	vienodai
+virškinti	virškinamas
+visas	visame
+visur	visur
+šešiasdešimt	šešiasdešimt
+šiaudelis	šiaudelį
+šlapias	šlapi
+šnekamasis	šnekamojoje
+šukos	šukomis
+žemyn	žemyn
+# added by the final verification pass
+daiktavardis	daiktavardžių
+patelė	patelė
+sukelti	sukelia
+geležinis	geležinis
+# support words used inside the batch31 definitions
+akmenukas	akmenukas
+atsitikti	atsitikti
+avarija	avarija
+ačiū	ačiū
+baigtis	baigtis
+didesnis	didesnis
+didžiausias	didžiausias
+grūdas	grūdas
+judinti	judinti
+kodėl	kodėl
+kvėpuoti	kvėpuoti
+lašas	lašas
+maždaug	maždaug
+mažesnis	mažesnis
+mintis	mintis
+nebėra	nebėra
+niekam	niekam
+nukristi	nukristi
+pasirinkti	pasirinkti
+plyšti	plyšti
+rašalas	rašalas
+rinktis	rinktis
+rišti	rišti
+rūpintis	rūpintis
+skonis	skonis
+spausti	spausti
+stiklinis	stiklinis
+sutarti	sutarti
+tešla	tešla
+tiesus	tiesus
+toli	toli toliau
+tvarkyti	tvarkyti
+tėtis	tėtis
+virsti	virsti
+visai	visai
+šaukti	šaukti
+šeimininkas	šeimininkas
+# inflected support forms the batch31 gate flagged
+akmenukai	akmenukai
+atsitiko	atsitiko
+avariją	avariją
+baigiasi	baigiasi
+daugiau	daugiau
+didesnė	didesnė
+didžiausia	didžiausia
+duobę	duobę
+gilus	gilus
+grūdus	grūdus
+jausmas	jausmas
+kitų	kitų
+komandoje	komandoje
+lūpas	lūpas
+nebekvėpuoja	nebekvėpuoja
+nesimaudo	nesimaudo
+nukristų	nukristų
+paimti	paimti
+pasakė	pasakė
+pasirenki	pasirenki
+pat	pat
+paties	paties
+paukštį	paukštį
+paukščiams	paukščiams
+pavojaus	pavojaus
+rašalu	rašalu
+rišame	rišame
+skonį	skonį
+spaudžia	spaudžia
+sutaria	sutaria
+tešlos	tešlos
+tiesi	tiesi
+tos	tos
+virsta	virsta
+vyriškas	vyriškas
+šeimininkui	šeimininkui
+šiai	šiai
+šio	šio
+žaidėjų	žaidėjų
+# `kuris` is used in 406 definitions ("Žmogus, kuris…", "Vieta, kurioje…") but
+# was never on the allowed list: those strings passed the A2 check only because
+# they collide with inflections of the VERB `kurti` ("to create") in
+# forms_cache.json. `kuriais` does not collide, which is how the hole surfaced.
+# Full paradigm from the en-Wiktionary table for `kuris` (pron), hunspell
+# lt_LT verified; `kuriom` rejected by hunspell and dropped.
+kuris	kuri kuria kuriai kuriais kuriam kuriame kurias kurie kuriems kurio kurioje kuriomis kurioms kurios kuriose kuris kuriuo kuriuos kuriuose kurią kurių kurį
+# `keli` ("a few, several") — already used as `kelių` in the definition of `jų`,
+# and now needed as `kelis` to separate the singular demonstratives (tas, šis)
+# from the plural ones (tie, šie). Every form below is hunspell lt_LT verified.
+keli	keli kelios kelis kelias kelių keliems kelioms keliais keliomis keliuose keliose

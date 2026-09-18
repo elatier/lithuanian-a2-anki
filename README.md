@@ -81,13 +81,66 @@ With the seams showing:
 - The audio is **synthesised, not recorded**: LIEPA / *Sintezatorius*
   (UAB Intelektika, developed with Vilnius University), voice "astra".
 
+## Building it yourself
+
+The whole deck is generated from the `batch*.tsv` files in this repo — one row
+per word, seven tab-separated columns:
+
+```
+key    lt_def    en_word    en_def    lt_example    en_example    pos
+```
+
+```bash
+pip install -r requirements.txt
+brew install hunspell          # or: apt install hunspell hunspell-lt
+# the lt_LT dictionary must be on hunspell's path
+
+python3 verify_defs.py batch32.tsv    # QA gate on one batch
+python3 resume_audio.py               # fetch missing clips (LIEPA, rate-limited)
+./build_single.sh --subdecks tema     # -> decks/lietuviu_A2.apkg
+```
+
+`resume_audio.py` is the slow step: 6,372 clips at roughly 1,250/hour. Audio is
+cached in `media_tmp/`, which is gitignored, so a fresh clone starts from zero.
+To build without waiting, `./build_single.sh --no-fetch` produces the same deck
+minus the recordings.
+
+### What the scripts do
+
+| | |
+|---|---|
+| `ltcard.py` | the card builder — note type, templates, CSS, Wiktionary lookups, TTS |
+| `build_single.py` / `.sh` | one `.apkg` for the whole deck; `--subdecks tema\|batch\|none` |
+| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN |
+| `resume_audio.py` | fetches only the clips that are missing, and resumes |
+| `invalidate_audio.py` | drops clips whose Lithuanian text changed — filenames hash the card key, not the text |
+| `apply_accents.py` | places stress marks on headwords and every displayed form |
+| `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
+| `gen_forms.py`, `scan_forms_lines.py` | paradigm generation and auditing |
+| `root_leak.py` | catches definitions that share a root with their headword |
+| `theme_preview.py`, `themes*_candidates.py`, `pron_preview.py` | render real cards under candidate stylings; how the current theme was chosen |
+
+### The data
+
+| | |
+|---|---|
+| `batch*.tsv` | the 1,593 cards |
+| `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
+| `a2_zodziai_v2.txt` | the word list, grouped by theme — the source of the `tema::` tags |
+| `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
+| `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
+| `forms_cache.json` | cached Wiktionary paradigms, so a build needs no network for known words |
+| `STYLING.css` | the card styling, identical to the CSS inside the note type |
+
 ## Licence and reuse
 
 The definitions, examples and translations in this deck are the author's own
 work and may be reused freely with attribution.
 
+The **scripts** in this repo are MIT-licensed — see `LICENSE`.
+
 **Inflected forms and glosses** are derived from **English Wiktionary**, which
-is CC BY-SA.
+is CC BY-SA. That covers `forms_cache.json` and the paradigm columns.
 
 **The audio** was generated with the Lithuanian speech synthesiser operated by
 **UAB Intelektika** (`sinteze.intelektika.lt`, now `snekos-sinteze.lt`), voice
