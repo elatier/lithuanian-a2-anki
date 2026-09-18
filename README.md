@@ -190,6 +190,7 @@ data/             deck source: word list, paradigms, accents, caches
 data/batches/     batch*.tsv, the cards themselves
 data/audio/       the recordings, ~115 MB
 docs/             the deck page (GitHub Pages)
+ankiweb/          the AnkiWeb listing: description and Share-form fields
 ```
 
 The scripts find their files through `scripts/paths.py`, so they can be run
