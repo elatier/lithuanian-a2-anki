@@ -16,9 +16,9 @@ rather than duplicating them.
 The default is a subdeck per theme, which is what the released deck uses.
 
 Before building, any clip that is missing or whose text changed is recorded
-(see resume_audio.py). Run `python3 scripts/fetch_audio.py` once after
-cloning, so that is only the clips for the words you added or edited.
---no-fetch never contacts the synthesiser.
+(see resume_audio.py). The recorded clips are in data/audio/, so that is
+only ever the clips for words you added or edited. --no-fetch never contacts
+the synthesiser.
 """
 import argparse
 import hashlib

@@ -9,7 +9,8 @@
 #   ./build_single.sh --subdecks batch   # a subdeck per batch
 #   ./build_single.sh --no-fetch         # never call the synthesiser
 #
-# Audio must already be cached — run `python3 scripts/fetch_audio.py` first.
+# Clips that are missing or whose text changed are recorded first; the
+# published ones are in data/audio/, so normally that is nothing.
 set -u
 cd "$(dirname "$0")"
 PY=$([ -x .venv/bin/python ] && echo .venv/bin/python || echo python3)

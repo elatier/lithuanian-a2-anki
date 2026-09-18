@@ -7,10 +7,10 @@ burst is fine, sustained parallel load gets 403 "Quota reached" and then
 connection resets. This walks the clips serially with a gap between calls and
 a long, patient backoff, so a full run just takes a while instead of failing.
 
-Every clip is written to media_tmp/ as soon as it arrives, and existing files
+Every clip is written to data/audio/ as soon as it arrives, and existing files
 are skipped, so interrupting this at any point loses nothing — rerun it. A
 clip whose text has changed since it was recorded (a definition was edited)
-is re-recorded: media_tmp/.text_manifest.json records what each clip says.
+is re-recorded: data/audio/.text_manifest.json records what each clip says.
 
 build_single.sh runs this before building, so you rarely need it directly.
 

@@ -83,9 +83,8 @@ With the seams showing:
 
 ## Building it yourself
 
-Everything needed to rebuild the released deck is in this repo and its
-release: the cards are in `data/`, and the recordings are a release asset, so
-a rebuild does not have to synthesise any audio.
+Everything needed to rebuild the deck is in this repo, recordings included.
+A rebuild needs no network and synthesises no audio.
 
 ### Setting up
 
@@ -95,13 +94,12 @@ Once per clone:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt   # the build needs only requirements.txt
-python3 scripts/fetch_audio.py        # the 6,372 published clips, ~115 MB
 ```
 
-`fetch_audio.py` is what saves you from re-synthesising the whole deck.
-It downloads the recordings from the release into `media_tmp/`, checks the
-download's SHA-256, and never overwrites a clip you already have. From then
-on, only the clips for words you add or edit are ever recorded.
+The 6,372 recordings (~115 MB) come with the clone, in `data/audio/`. Only
+the clips for words you add or edit are ever recorded, and you commit them
+with the card. If you only want to build, `git clone --depth 1` skips the
+history and keeps the download small.
 
 `build_single.sh` uses `.venv` automatically, even when it is not activated.
 The other scripts run with whichever `python3` is active.
@@ -124,8 +122,8 @@ passing everything.
 ./build_single.sh                 # -> decks/lietuviu_A2.apkg
 ```
 
-After `fetch_audio.py`, this builds the same notes, cards, subdecks and audio
-as the release, offline, in about ten seconds. The note IDs are stable, so
+This builds the same notes, cards, subdecks and audio as the release,
+offline, in about ten seconds. The note IDs are stable, so
 importing it over an existing copy updates the cards in place.
 
 Before building, `build_single.sh` records any clip that is missing or whose
@@ -150,8 +148,9 @@ missing clips are left off their cards.
    Nothing is recorded while a check fails. Pass several words at once, or
    `--no-audio` to only check.
 4. **Build**: `./build_single.sh`.
-5. **Commit** the card, and any new files under `data/cache/`: the dictionary
-   lookups for the new word.
+5. **Commit** the card, its new clips in `data/audio/` (including
+   `.text_manifest.json`), and any new files under `data/cache/`: the
+   dictionary lookups for the new word.
 
 If the QA gate reports no inflection table, Wiktionary has none for the word.
 Write its paradigm into `data/manual_forms.tsv` instead:
@@ -187,12 +186,13 @@ scripts/          the pipeline (Python); paths.py says where everything lives
 tests/            pytest suite; no network needed
 data/             deck source: word list, paradigms, accents, caches
 data/batches/     batch*.tsv, the cards themselves
+data/audio/       the recordings, ~115 MB
 docs/             the deck page (GitHub Pages)
 ```
 
 The scripts find their files through `scripts/paths.py`, so they can be run
-from any directory. Two things are local and gitignored: the audio in
-`media_tmp/`, and the built decks in `decks/`.
+from any directory. Only the built decks, in `decks/`, are local and
+gitignored.
 
 ### What the scripts do
 
@@ -202,7 +202,6 @@ All in `scripts/`.
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
 | `add_word.py` | checks new or edited words and records only their audio |
-| `fetch_audio.py` | downloads the published recordings into `media_tmp/` |
 | `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |
 | `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD |
 | `root_leak.py` | catches definitions that share a root with their headword |
@@ -232,7 +231,7 @@ The tests check that:
 
 - a bad answer is never saved as a clip or cached as a fact;
 - retries back off and give up instead of looping;
-- an interrupted download never leaves a partial clip behind;
+- an interrupted recording never leaves a partial clip behind;
 - the whole deck builds with the network refused.
 
 ### The data
@@ -248,6 +247,7 @@ All in `data/`.
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `cache/kaikki/`, `cache/wikt/` | every kaikki.org and Wiktionary lookup the build makes, so a build needs no network and does not drift as Wiktionary is edited. An empty file records that a word has no entry. |
+| `audio/` | the recordings, four per card, and `.text_manifest.json`, which records what each clip says so that edited text is re-recorded |
 | `forms_cache.json` | cached Wiktionary paradigms used by the QA gate |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
 

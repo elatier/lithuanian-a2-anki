@@ -4,7 +4,8 @@
     data/batches/    batch*.tsv, one row per card
     data/cache/      kaikki.org and Wiktionary lookups, tracked so a build
                      is reproducible and needs no network
-    media_tmp/       cached audio clips  (local, gitignored; fetch_audio.py)
+    data/audio/      the recorded clips and .text_manifest.json, tracked so
+                     nobody re-records what is already recorded
     decks/           built .apkg files   (local, gitignored)
 """
 from pathlib import Path
@@ -19,7 +20,7 @@ THEME_FILE = DATA / "a2_zodziai_v2.txt"
 EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
 ACCENTED = DATA / "accented.txt"
 
-MEDIA = ROOT / "media_tmp"
+MEDIA = DATA / "audio"
 KAIKKI_CACHE = DATA / "cache" / "kaikki"
 WIKT_CACHE = DATA / "cache" / "wikt"
 DECKS = ROOT / "decks"

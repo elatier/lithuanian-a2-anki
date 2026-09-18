@@ -1,12 +1,9 @@
-"""Deciding what to record, recording it patiently, and restoring the
-published clips — including when the service keeps failing."""
-import hashlib
+"""Deciding what to record and recording it patiently — including when the
+service keeps failing."""
 import json
-import zipfile
 
 import pytest
 
-import fetch_audio
 import ltcard
 import paths
 import resume_audio
@@ -151,59 +148,6 @@ def test_bad_audio_from_service_counts_as_failure(tmp_path, media, sleeps,
     man = {}
     assert resume_audio.record([("a", media / "a.mp3")], man) == 1
     assert not (media / "a.mp3").exists() and man == {}
-
-
-# ----------------------------------------------------------- fetch_audio ----
-
-def archive(tmp_path, entries, manifest=None):
-    z = tmp_path / "audio.zip"
-    with zipfile.ZipFile(z, "w") as zf:
-        for name, data in entries.items():
-            zf.writestr(name, data)
-        zf.writestr(".text_manifest.json", json.dumps(manifest or {}))
-    return z
-
-
-def test_fetch_unpacks_and_keeps_existing(tmp_path, media):
-    (media / "lt_keep_w.mp3").write_bytes(b"local")
-    z = archive(tmp_path, {"lt_new_w.mp3": MP3, "lt_keep_w.mp3": MP3},
-                {"lt_new_w.mp3": "x", "lt_keep_w.mp3": "theirs"})
-    resume_audio.save_manifest({"lt_keep_w.mp3": "ours"})
-    fetch_audio.unpack(z)
-    assert (media / "lt_new_w.mp3").read_bytes() == MP3
-    assert (media / "lt_keep_w.mp3").read_bytes() == b"local"
-    man = json.loads(resume_audio.MANIFEST.read_text())
-    assert man == {"lt_new_w.mp3": "x", "lt_keep_w.mp3": "ours"}
-
-
-@pytest.mark.parametrize("name", ["../escape.mp3", "sub/dir.mp3",
-                                  "script.sh"])
-def test_fetch_rejects_unexpected_entries(tmp_path, media, name):
-    with pytest.raises(SystemExit):
-        fetch_audio.unpack(archive(tmp_path, {name: MP3}))
-    assert not (tmp_path / "escape.mp3").exists()
-
-
-def test_fetch_rejects_a_corrupt_download(tmp_path, media, monkeypatch):
-    z = archive(tmp_path, {"lt_x_w.mp3": MP3})
-    assert hashlib.sha256(z.read_bytes()).hexdigest() != fetch_audio.SHA256
-    monkeypatch.setattr("sys.argv", ["fetch_audio.py", "--zip", str(z)])
-    with pytest.raises(SystemExit, match="checksum"):
-        fetch_audio.main()
-    assert list(media.iterdir()) == []
-
-
-def test_fetch_download_has_a_timeout(tmp_path, monkeypatch):
-    seen = {}
-
-    def fake_urlopen(url, timeout=None):
-        seen["timeout"] = timeout
-        raise TimeoutError("stalled")
-    monkeypatch.setattr(fetch_audio.urllib.request, "urlopen", fake_urlopen)
-    with pytest.raises(TimeoutError):
-        fetch_audio.download("https://example.invalid/a.zip",
-                             tmp_path / "a.zip")
-    assert seen["timeout"]
 
 
 # ------------------------------------------- planner agrees with the deck ----

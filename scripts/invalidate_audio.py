@@ -3,7 +3,7 @@
 
 You normally do not need this. Clip filenames hash the card key, not the
 spoken text, but resume_audio.py keeps a manifest of what each clip says
-(media_tmp/.text_manifest.json) and re-records any clip whose text changed.
+(data/audio/.text_manifest.json) and re-records any clip whose text changed.
 Use this only to force a fresh recording, e.g. when a clip sounds wrong.
 
     python3 scripts/invalidate_audio.py kasa oda

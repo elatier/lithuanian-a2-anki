@@ -1,6 +1,6 @@
 # Allowlist: ignore everything, then un-ignore exactly what is published.
 # Nothing can be committed by accident — not the 116 MB .apkg, not the
-# 6,372 clips in media_tmp/, not the working notes.
+# working notes.
 
 *
 !.gitignore
@@ -37,3 +37,6 @@
 !data/cache/kaikki/*.jsonl
 !data/cache/wikt/
 !data/cache/wikt/*.html
+!data/audio/
+!data/audio/*.mp3
+!data/audio/.text_manifest.json
