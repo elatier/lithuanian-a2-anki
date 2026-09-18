@@ -7,15 +7,15 @@ catches this going forward, but clips generated before the manifest existed
 have no record. Run this ONCE against the words whose text is known to have
 changed; after that the manifest handles it automatically.
 
-    python3 invalidate_audio.py            # the known list below
-    python3 invalidate_audio.py kasa oda   # specific words
+    python3 scripts/invalidate_audio.py           # the known list below
+    python3 scripts/invalidate_audio.py kasa oda  # specific words
 """
 import hashlib
 import json
 import sys
-from pathlib import Path
 
 import ltcard
+import paths
 
 # Headwords whose definition, example or spoken form changed after their audio
 # may already have been generated.
@@ -46,7 +46,7 @@ jie jūs mes tie šie
 """.split()
 CHANGED = [w for w in CHANGED if not w.startswith("#")]
 
-MEDIA = Path("media_tmp")
+MEDIA = paths.MEDIA
 MANIFEST = MEDIA / ".text_manifest.json"
 
 
@@ -60,7 +60,7 @@ def main(words):
         except ValueError:
             man = {}
     gone = []
-    for f in sorted(Path(".").glob("batch*.tsv")):
+    for f in paths.batch_files():
         for key, d in ltcard.load_defs(str(f)).items():
             head = d.get("headword") or key.split("#")[0]
             if head not in words:

@@ -16,7 +16,7 @@ Checks per word (no human input needed):
 Also writes review.txt: word | draft def | Wiktionary glosses | EN —
 side by side, so human spot-checking a sample takes seconds per word.
 
-Usage: python3 verify_defs.py defs.tsv
+Usage: python3 scripts/verify_defs.py data/batches/batchN.tsv
 Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM) fails.
 """
 import json
@@ -26,8 +26,9 @@ import sys
 from pathlib import Path
 
 import ltcard
+import paths
 
-CACHE = Path("forms_cache.json")
+CACHE = paths.FORMS_CACHE
 
 # The gate used to check only what a human wrote (definition, example,
 # translation) and never the GENERATED parts of a card — the headword as it is
@@ -292,7 +293,7 @@ def main(path):
         # A2-only restriction made ~20 synonym pairs mutually ambiguous on the
         # definition->word card; extra_def_vocab.tsv holds the deliberate,
         # documented exceptions that buy distinctness. See that file's header.
-        extra = Path("extra_def_vocab.tsv")
+        extra = paths.EXTRA_DEF_VOCAB
         if extra.exists():
             for _line in extra.read_text(encoding="utf-8").splitlines():
                 if _line.strip() and not _line.startswith("#"):

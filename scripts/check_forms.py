@@ -3,7 +3,8 @@
 Exits 1 and lists any form the Lithuanian lexicon does not recognise."""
 import subprocess, sys
 from pathlib import Path
-path = Path(sys.argv[1] if len(sys.argv) > 1 else "manual_forms.tsv")
+import paths
+path = Path(sys.argv[1]) if len(sys.argv) > 1 else paths.MANUAL_FORMS
 # Real words missing from the hunspell lt_LT lexicon (verified against the
 # Pusiaukelė A2 word list, which lists them as required vocabulary).
 LEXICON_GAPS = {"skalbykl", "džiovykl",

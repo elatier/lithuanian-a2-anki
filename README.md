@@ -83,7 +83,7 @@ With the seams showing:
 
 ## Building it yourself
 
-The whole deck is generated from the `batch*.tsv` files in this repo — one row
+The whole deck is generated from the `data/batches/batch*.tsv` files in this repo — one row
 per word, seven tab-separated columns:
 
 ```
@@ -95,22 +95,39 @@ pip install -r requirements.txt
 brew install hunspell          # or: apt install hunspell hunspell-lt
 # the lt_LT dictionary must be on hunspell's path
 
-python3 verify_defs.py batch32.tsv    # QA gate on one batch
-python3 resume_audio.py               # fetch missing clips (LIEPA, rate-limited)
-./build_single.sh --subdecks tema     # -> decks/lietuviu_A2.apkg
+python3 scripts/verify_defs.py data/batches/batch32.tsv  # QA gate on one batch
+python3 scripts/resume_audio.py        # fetch missing clips (LIEPA, rate-limited)
+./build_single.sh --subdecks tema      # -> decks/lietuviu_A2.apkg
 ```
 
-`resume_audio.py` is the slow step: 6,372 clips at roughly 1,250/hour. Audio is
+`scripts/resume_audio.py` is the slow step: 6,372 clips at roughly 1,250/hour. Audio is
 cached in `media_tmp/`, which is gitignored, so a fresh clone starts from zero.
 To build without waiting, `./build_single.sh --no-fetch` produces the same deck
 minus the recordings.
 
+### Layout
+
+```
+build_single.sh   build the deck
+scripts/          the pipeline (Python); paths.py says where everything lives
+data/             deck source: word list, paradigms, accents, caches
+data/batches/     batch*.tsv, the cards themselves
+docs/             the deck page (GitHub Pages)
+```
+
+The scripts find their files through `scripts/paths.py`, so they can be run
+from any directory. Local caches — `media_tmp/`, `kaikki_cache/`,
+`wikt_cache/` — and built decks in `decks/` live in the repo root and are
+gitignored.
+
 ### What the scripts do
+
+All in `scripts/`.
 
 | | |
 |---|---|
 | `ltcard.py` | the card builder — note type, templates, CSS, Wiktionary lookups, TTS |
-| `build_single.py` / `.sh` | one `.apkg` for the whole deck; `--subdecks tema\|batch\|none` |
+| `build_single.py` (and `../build_single.sh`) | one `.apkg` for the whole deck; `--subdecks tema\|batch\|none` |
 | `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN |
 | `resume_audio.py` | fetches only the clips that are missing, and resumes |
 | `invalidate_audio.py` | drops clips whose Lithuanian text changed — filenames hash the card key, not the text |
@@ -122,6 +139,8 @@ minus the recordings.
 
 ### The data
 
+All in `data/`.
+
 | | |
 |---|---|
 | `batch*.tsv` | the 1,593 cards |
@@ -131,6 +150,7 @@ minus the recordings.
 | `accented.txt`, `accents_from_engine.tsv` | stress marks by source; engine-derived ones are flagged for review, never trusted |
 | `forms_cache.json` | cached Wiktionary paradigms, so a build needs no network for known words |
 | `STYLING.css` | the card styling, identical to the CSS inside the note type |
+| `THEMES.md` | the theme taxonomy behind the `tema::` tags |
 
 ## Licence and reuse
 

@@ -10,26 +10,26 @@ a long, patient backoff, so a full run just takes a while instead of failing.
 Every clip is written to media_tmp/ as soon as it arrives, and existing files
 are skipped, so interrupting this at any point loses nothing — rerun it.
 
-    python3 resume_audio.py                 # every batch still missing audio
-    python3 resume_audio.py batch12.tsv     # just one
+    python3 scripts/resume_audio.py                               # every batch
+    python3 scripts/resume_audio.py data/batches/batch12.tsv      # just one
 
-When it reports 0 missing, build the decks with:
-    python3 batch.py batchN.tsv
+When it reports 0 missing, build the deck with:
+    ./build_single.sh --subdecks tema
 """
 import hashlib
 import json
 import sys
 import time
 from datetime import datetime
-from pathlib import Path
 
 import ltcard
+import paths
 
 GAP = 1.5          # seconds between successful calls
 BACKOFF = 60       # seconds to wait after a throttle
 MAX_STALLS = 20    # give up after this many consecutive throttles
 
-MEDIA = Path("media_tmp")
+MEDIA = paths.MEDIA
 MEDIA.mkdir(exist_ok=True)
 
 # Clip filenames hash the card key, not the spoken text, so editing a
@@ -159,7 +159,5 @@ def main(paths):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:] or sorted(
-        (str(p) for p in Path(".").glob("batch*.tsv")),
-        key=lambda s: int("".join(c for c in Path(s).stem if c.isdigit()) or 0))
+    args = sys.argv[1:] or [str(p) for p in paths.batch_files()]
     sys.exit(main(args))

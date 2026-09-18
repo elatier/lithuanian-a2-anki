@@ -32,8 +32,8 @@ give back exactly the form it replaces. Where a source offers two different
 accentuations for one spelling — `mes` is both mès and mẽs — the form is
 skipped and reported, because choosing would be guessing.
 
-    python3 apply_accents.py
-    python3 apply_accents.py --dry-run
+    python3 scripts/apply_accents.py
+    python3 scripts/apply_accents.py --dry-run
 """
 import json
 import re
@@ -42,10 +42,11 @@ import unicodedata as u
 from pathlib import Path
 
 import ltcard
+import paths
 
-MANUAL = Path("manual_forms.tsv")
-SUPPLIED = Path("accented.txt")
-TODO = Path("needs_accents.txt")
+MANUAL = paths.MANUAL_FORMS
+SUPPLIED = paths.ACCENTED
+TODO = paths.ROOT / "needs_accents.txt"
 
 # Grave, acute, tilde — the three Lithuanian stress marks, and nothing else.
 # The macron U+0304 is part of the LETTER ū, not an accent; counting it as one
@@ -187,8 +188,8 @@ def main():
             "#\n"
             "# Paste everything below the comments into VDU's Kirciuoklis\n"
             "#   https://kalbu.vdu.lt/mokymosi-priemones/kirciuoklis/\n"
-            "# save its output as accented.txt in this folder, then rerun\n"
-            "#   python3 apply_accents.py\n"
+            "# save its output as data/accented.txt, then rerun\n"
+            "#   python3 scripts/apply_accents.py\n"
             "#\n"
             "# Whole paradigm lines are given rather than loose words so the\n"
             "# tool can tell a verb form from a same-spelled noun. The output\n"

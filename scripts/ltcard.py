@@ -27,7 +27,7 @@ The script WARNS if a definition contains any form of the headword
 example. Words not found on Wiktionary are skipped, never invented.
 
 Usage:
-  python3 ltcard.py namas kalbėti gražus --defs defs.tsv -o deck.apkg
+  python3 scripts/ltcard.py namas kalbėti gražus --defs defs.tsv -o deck.apkg
   Options: --deck NAME  --voice lt-LT-OnaNeural|lt-LT-LeonasNeural
 """
 
@@ -45,6 +45,8 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 import genanki
+
+import paths
 
 WIKT_HTML = "https://en.wiktionary.org/api/rest_v1/page/html/{}"
 KAIKKI = "https://kaikki.org/dictionary/Lithuanian/meaning/{a}/{ab}/{w}.jsonl"
@@ -367,7 +369,7 @@ def pronoun_table(word, manual):
 # ---------- lookups (verifiable sources) ----------
 
 def kaikki_entries(word):
-    cdir = Path("kaikki_cache"); cdir.mkdir(exist_ok=True)
+    cdir = paths.KAIKKI_CACHE; cdir.mkdir(exist_ok=True)
     cfile = cdir / f"{word}.jsonl"
     if cfile.exists():
         return [json.loads(l) for l in
@@ -395,7 +397,7 @@ def kaikki_entries(word):
 
 
 def wikt_lt_tables(word):
-    cdir = Path("wikt_cache"); cdir.mkdir(exist_ok=True)
+    cdir = paths.WIKT_CACHE; cdir.mkdir(exist_ok=True)
     cfile = cdir / f"{word}.html"
     if cfile.exists():
         soup = BeautifulSoup(cfile.read_text(encoding="utf-8"), "html.parser")
@@ -736,7 +738,7 @@ MODEL = genanki.Model(
 # ---------- assembly ----------
 
 @functools.lru_cache(maxsize=8)
-def load_manual_forms(path="manual_forms.tsv"):
+def load_manual_forms(path=paths.MANUAL_FORMS):
     mf = {}
     p = Path(path)
     if not p.exists():
@@ -750,11 +752,11 @@ def load_manual_forms(path="manual_forms.tsv"):
     return mf
 
 
-# The word list sits next to this script. It used to be referenced by an
-# absolute path that existed only on the machine the deck was first built on;
-# everywhere else load_themes() silently returned {} and every note was tagged
+# The word list lives in data/. It used to be referenced by an absolute path
+# that existed only on the machine the deck was first built on; everywhere
+# else load_themes() silently returned {} and every note was tagged
 # tema::be-temos.
-THEME_FILE = Path(__file__).resolve().parent / "a2_zodziai_v2.txt"
+THEME_FILE = paths.THEME_FILE
 
 
 @functools.lru_cache(maxsize=8)
@@ -959,7 +961,7 @@ def main():
                          "edge: lt-LT-OnaNeural, lt-LT-LeonasNeural")
     ap.add_argument("--tag", action="append", default=[],
                     help="extra tag(s) for all notes, e.g. batch::batch1")
-    ap.add_argument("--cache", default="forms_cache.json",
+    ap.add_argument("--cache", default=str(paths.FORMS_CACHE),
                     help="known-forms cache for A2 vocabulary checking")
     ap.add_argument("--defs", required=True,
                     help="TSV: word, lt_def, en_word, en_def, "
@@ -976,7 +978,7 @@ def main():
             known.add(w); known.update(forms)
         known |= FUNCTION_WORDS
     defs = load_defs(args.defs)
-    media_dir = Path("media_tmp"); media_dir.mkdir(exist_ok=True)
+    media_dir = paths.MEDIA; media_dir.mkdir(exist_ok=True)
     deck = genanki.Deck(
         int(hashlib.md5(args.deck.encode()).hexdigest()[:8], 16), args.deck)
     notes, media, errors = [], [], []

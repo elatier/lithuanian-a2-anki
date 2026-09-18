@@ -2,18 +2,18 @@
 the table and the definition live)."""
 import html, sys
 from pathlib import Path
-import ltcard, theme_preview as TP
+import ltcard, paths, theme_preview as TP
 
 WORDS = ["jie", "tie", "šie", "tas", "šis", "kuris", "kas", "savo", "jos"]
 TP.WORDS = WORDS
 notes = {}
 ltcard.make_audio = lambda *a, **k: None
-for p in sorted(Path(".").glob("batch*.tsv")):
+for p in paths.batch_files():
     d = ltcard.load_defs(str(p))
     for w in WORDS:
         if w in d and w not in notes:
             n = []
-            ltcard.process_word(w, "astra", Path("media_tmp"), d, n, [], [])
+            ltcard.process_word(w, "astra", paths.MEDIA, d, n, [], [])
             if n:
                 notes[w] = n[0]
 missing = [w for w in WORDS if w not in notes]

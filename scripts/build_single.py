@@ -11,12 +11,12 @@ It reuses ltcard.py's own card builder — same fields, same audio, same note
 GUIDs — so re-importing over an existing collection updates the notes in place
 rather than duplicating them.
 
-    python3 build_single.py                       # decks/lietuviu_A2.apkg, flat
-    python3 build_single.py --subdecks tema       # subdeck per theme
-    python3 build_single.py --subdecks batch      # subdeck per batch
-    python3 build_single.py -o ~/Desktop/lt.apkg
+    python3 scripts/build_single.py                  # decks/lietuviu_A2.apkg, flat
+    python3 scripts/build_single.py --subdecks tema  # subdeck per theme
+    python3 scripts/build_single.py --subdecks batch # subdeck per batch
+    python3 scripts/build_single.py -o ~/Desktop/lt.apkg
 
-Audio must already be cached — run `python3 resume_audio.py` until it reports
+Audio must already be cached — run `python3 scripts/resume_audio.py` until it reports
 nothing left to generate, or this will hit the LIEPA rate limit mid-build.
 """
 import argparse
@@ -30,6 +30,7 @@ from pathlib import Path
 import genanki
 
 import ltcard
+import paths
 
 # ---------------------------------------------------------------- audio ----
 # ltcard.py synthesises a missing clip inline, which is fine, and raises when
@@ -90,16 +91,9 @@ def strip_missing_sounds(note):
     """
     for i, field in enumerate(note.fields):
         m = re.fullmatch(r"\[sound:(.+?)\]", field.strip())
-        if m and not (Path("media_tmp") / m.group(1)).exists():
+        if m and not (paths.MEDIA / m.group(1)).exists():
             note.fields[i] = ""
 
-
-def batch_files():
-    """Every batch TSV, in numeric order (batch1_full first)."""
-    def num(p):
-        m = re.search(r"batch(\d+)", p.name)
-        return int(m.group(1)) if m else 0
-    return sorted(Path(".").glob("batch*.tsv"), key=num)
 
 
 def deck_for(name, decks):
@@ -111,7 +105,7 @@ def deck_for(name, decks):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-o", "--out", default="decks/lietuviu_A2.apkg")
+    ap.add_argument("-o", "--out", default=str(paths.DECKS / "lietuviu_A2.apkg"))
     ap.add_argument("--deck", default="Lietuvių A2")
     ap.add_argument("--subdecks", choices=["none", "batch", "tema"],
                     default="none",
@@ -119,7 +113,7 @@ def main():
                          "subdeck per batch or per theme tag")
     ap.add_argument("--voice", default="astra")
     ap.add_argument("--engine", choices=["liepa", "edge"], default="liepa")
-    ap.add_argument("--cache", default="forms_cache.json")
+    ap.add_argument("--cache", default=str(paths.FORMS_CACHE))
     ap.add_argument("--no-fetch", action="store_true",
                     help="do not contact the synthesiser at all; cards whose "
                          "clips are missing are still built, just without "
@@ -130,7 +124,7 @@ def main():
     # card. Say up front how many there are, so a long fetch is not a surprise.
     import resume_audio
     missing = []
-    files = batch_files()
+    files = paths.batch_files()
     for n, f in enumerate(files, 1):
         # The scan resolves every word's paradigm before anything is built,
         # and a word missing from the local caches costs a network round trip.
@@ -143,7 +137,7 @@ def main():
         print(f"{len(missing)} audio clip(s) missing"
               + (" — building without them (--no-fetch)." if args.no_fetch else
                  f" — fetching them as we go, roughly {mins} min. "
-                 f"Ctrl-C and run `python3 resume_audio.py` instead if you "
+                 f"Ctrl-C and run `python3 scripts/resume_audio.py` instead if you "
                  f"would rather do it separately; nothing is lost either way."),
               flush=True)
     ltcard.make_audio = (
@@ -158,12 +152,12 @@ def main():
             known.update(forms)
         known |= ltcard.FUNCTION_WORDS
 
-    media_dir = Path("media_tmp")
+    media_dir = paths.MEDIA
     media_dir.mkdir(exist_ok=True)
     decks, media, errors = {}, [], []
     total = 0
 
-    for path in batch_files():
+    for path in paths.batch_files():
         tag = f"batch::{path.stem.replace('_full', '')}"
         defs = ltcard.load_defs(str(path))
         notes = []
@@ -210,7 +204,7 @@ def main():
     if _failed:
         print(f"{len(_failed)} clip(s) could not be fetched; those cards are "
               f"in the deck without that one recording. Run "
-              f"`python3 resume_audio.py` and rebuild to fill them in — the "
+              f"`python3 scripts/resume_audio.py` and rebuild to fill them in — the "
               f"note GUIDs are stable, so Anki will update in place.",
               file=sys.stderr)
     # ltcard.py uses one list for both real failures and informational notes

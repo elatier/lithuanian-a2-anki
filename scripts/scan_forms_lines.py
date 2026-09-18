@@ -10,6 +10,7 @@ import re
 import sys
 from pathlib import Path
 import ltcard
+import paths
 
 # things that never belong in "namas / namai" or "kalbėti, kalba, kalbėjo"
 BAD = re.compile(r"stress pattern|declension|conjugation|inflection|"
@@ -68,6 +69,7 @@ def main(files):
 
 
 if __name__ == "__main__":
-    args = sys.argv[1:] or (["batch1_full.tsv"] +
-                            [f"batch{i}.tsv" for i in range(2, 31)])
+    args = sys.argv[1:] or [str(paths.BATCHES / f)
+                            for f in ["batch1_full.tsv"] +
+                            [f"batch{i}.tsv" for i in range(2, 31)]]
     sys.exit(main(args))

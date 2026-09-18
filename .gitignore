@@ -5,74 +5,27 @@
 *
 !.gitignore
 
-# --- site ---
-!docs/
-!docs/**
-
 # --- docs & licence ---
 !README.md
 !LICENSE
 !LIEPA_AUDIO_LICENCE.md
-!THEMES.md
 !requirements.txt
+!build_single.sh
+
+# --- site (GitHub Pages) ---
+!docs/
+!docs/**
 
 # --- pipeline ---
-!apply_accents.py
-!build_cache.py
-!build_single.py
-!build_single.sh
-!check_forms.py
-!gen_forms.py
-!invalidate_audio.py
-!ltcard.py
-!pron_preview.py
-!resume_audio.py
-!root_leak.py
-!scan_forms_lines.py
-!theme_preview.py
-!themes2_candidates.py
-!themes_candidates.py
-!verify_defs.py
+!scripts/
+!scripts/*.py
 
 # --- deck source ---
-!STYLING.css
-!a2_zodziai_v2.txt
-!accented.txt
-!accents_from_engine.tsv
-!batch10.tsv
-!batch11.tsv
-!batch12.tsv
-!batch13.tsv
-!batch14.tsv
-!batch15.tsv
-!batch16.tsv
-!batch17.tsv
-!batch18.tsv
-!batch19.tsv
-!batch1_full.tsv
-!batch2.tsv
-!batch20.tsv
-!batch21.tsv
-!batch22.tsv
-!batch23.tsv
-!batch24.tsv
-!batch25.tsv
-!batch26.tsv
-!batch27.tsv
-!batch28.tsv
-!batch29.tsv
-!batch3.tsv
-!batch30.tsv
-!batch31.tsv
-!batch32.tsv
-!batch4.tsv
-!batch5.tsv
-!batch6.tsv
-!batch7.tsv
-!batch8.tsv
-!batch9.tsv
-!extra_def_vocab.tsv
-!forms_cache.json
-!function_words.txt
-!manual_forms.tsv
-!requirements.txt
+!data/
+!data/*.tsv
+!data/*.txt
+!data/*.json
+!data/*.css
+!data/*.md
+!data/batches/
+!data/batches/*.tsv

@@ -5,7 +5,7 @@ Builds notes with ltcard's own templates and field values (audio stubbed out),
 then writes one HTML page per theme showing every card state side by side, in
 Anki's light and dark modes. Screenshot the pages to compare themes.
 
-    python3 theme_preview.py            # writes preview/<theme>.html
+    python3 scripts/theme_preview.py  # writes preview/<theme>.html
 """
 import html
 import re
@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import ltcard
+import paths
 
 # which module supplies THEMES, and where the pages go
 _mod = sys.argv[1] if len(sys.argv) > 1 else "themes_candidates"
@@ -25,10 +26,10 @@ WORDS = ["vaistinė", "traukinys", "aš"]
 def build_notes():
     ltcard.make_audio = lambda *a, **k: None
     notes, media, errors = [], [], []
-    media_dir = Path("media_tmp")
+    media_dir = paths.MEDIA
     media_dir.mkdir(exist_ok=True)
     out = {}
-    for path in sorted(Path(".").glob("batch*.tsv")):
+    for path in paths.batch_files():
         defs = ltcard.load_defs(str(path))
         for w in WORDS:
             if w in defs and w not in out:
