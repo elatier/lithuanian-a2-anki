@@ -22,7 +22,26 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Offline build
         run: ./build_single.sh --no-fetch
+      - name: Title and summary from the data
+        id: deck
+        run: |
+          python - <<'EOF' >> "$GITHUB_OUTPUT"
+          import sys
+          sys.path.insert(0, "scripts")
+          import update_numbers
+          f = update_numbers.facts()
+          print(f"title=Lietuvių A2 — {f['notes']:,} words")
+          print(f"summary={f['notes']:,} words · {f['cards']:,} cards · "
+                f"{f['recordings']:,} recordings · {f['paradigms']} hand-checked paradigms")
+          EOF
       - uses: softprops/action-gh-release@v2
         with:
-          files: decks/lietuviu_A2.apkg
+          name: ${{ steps.deck.outputs.title }}
+          body: |
+            **${{ steps.deck.outputs.summary }}.**
+
+            Download `lietuviu_A2.apkg` and import it into Anki (File → Import).
+            Importing over an earlier version updates the cards in place.
+          append_body: true
           generate_release_notes: true
+          files: decks/lietuviu_A2.apkg

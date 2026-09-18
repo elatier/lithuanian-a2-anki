@@ -370,5 +370,6 @@ in the checks. The maintainer records the audio, builds and releases.
 ```
 
 builds, checks that the docs quote the current numbers, tags and pushes;
-the release workflow attaches the `.apkg` to a GitHub release. Then import
+the release workflow attaches the `.apkg` to a GitHub release titled with
+the word count and summarised from the data. Then import
 the new build into Anki desktop and share it again to update AnkiWeb.

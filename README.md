@@ -167,8 +167,8 @@ each gate code means are all in the guide.
 
 That builds, checks that the docs quote the current numbers, tags, and
 pushes. The release workflow then builds the deck offline from the tag and
-attaches the `.apkg` to a GitHub release, which is what the download links
-point at. Without GitHub Actions, upload the local build instead:
+attaches the `.apkg` to a GitHub release titled from the data (`Lietuvių
+A2 — 1,596 words`), which is what the download links point at. Without GitHub Actions, upload the local build instead:
 `gh release create v1.1.0 decks/lietuviu_A2.apkg`.
 
 The AnkiWeb listing is updated by importing the new build into Anki
