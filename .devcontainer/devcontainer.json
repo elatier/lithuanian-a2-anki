@@ -1,0 +1,13 @@
+{
+  "name": "lithuanian-a2-anki",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+  "postCreateCommand": "sudo apt-get update -q && sudo apt-get install -y -q hunspell hunspell-lt && pip install -r requirements-dev.txt && npm install -g @anthropic-ai/claude-code",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}

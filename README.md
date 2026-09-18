@@ -91,10 +91,23 @@ A rebuild needs no network and synthesises no audio.
 Once per clone:
 
 ```bash
+./setup.sh
+```
+
+That creates `.venv`, installs the Python packages, and installs hunspell
+with the Lithuanian dictionary where it can (Homebrew or apt; on macOS it
+fetches LibreOffice's `lt_LT` files into `~/Library/Spelling`). By hand,
+the same is:
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt   # the build needs only requirements.txt
 ```
+
+No local setup at all: open the repo in a GitHub Codespace. The
+`.devcontainer/` gives you Python, hunspell, the dictionary and the Claude
+Code CLI in the browser.
 
 The 6,372 recordings (~115 MB) come with the clone, in `data/audio/`. Only
 the clips for words you add or edit are ever recorded, and you commit them
@@ -130,43 +143,58 @@ Before building, `build_single.sh` records any clip that is missing or whose
 text has changed, and only those. `--no-fetch` never contacts the synthesiser:
 missing clips are left off their cards.
 
-### Adding or changing a word
+### Adding words
 
-In Claude Code, `/add-word lentyna` walks these steps with the model
-drafting the card, and stops for your approval before anything is recorded
-(the skill is `.claude/skills/add-word/`). By hand:
+Three ways, by how much you want installed.
 
-0. **Start from the packet**: `python3 scripts/draft_packet.py lentyna`
-   prints what Wiktionary says the word means and how it inflects, the
-   theme it belongs to and how that theme's cards read, the cards that
-   already share its English answer, and the vocabulary a definition may
-   use. Then `python3 scripts/add_word.py lentyna --new --pos noun --theme 02`
-   appends a row with the key, gloss and part of speech filled in and lists
-   the word under the theme, so steps 1 and 2 are only the four columns of
-   text.
-1. **Write the card**: a row in a `data/batches/batch*.tsv` file, or a new
-   batch file. See [the card format](#the-card-format) below, and
-   [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md) for the style and the
-   rules the QA gate enforces.
-2. **Give it a theme**: list the headword under a theme heading in
-   `data/a2_zodziai_v2.txt` (the themes are in `data/THEMES.md`).
-3. **Check it and record it**:
+**Nothing installed.** Edit a `data/batches/batch*.tsv` file on GitHub
+(one row per card, [format below](#the-card-format)), add the headword
+under a theme in `data/a2_zodziai_v2.txt`, and open a pull request. The CI
+workflow runs the QA gate on it and the report is in the checks. The
+maintainer records the audio and releases.
 
-   ```bash
-   python3 scripts/add_word.py slėnis
-   ```
+**In Claude Code.** `/add-word slėnis`, or `/add-word words.tsv` for a
+batch, walks the steps below with the model drafting the cards. It stops
+once for your approval before anything is recorded. Works locally or in a
+Codespace.
 
-   This finds the word's rows and checks its theme. It runs the QA gate and
-   the root-leak check on those rows only. If they pass, it records the clips
-   that are new or whose text changed: four per card, a few seconds each.
-   Nothing is recorded while a check fails. Pass several words at once, or
-   `--no-audio` to only check.
-4. **Build**: `./build_single.sh`, then `python3 scripts/update_numbers.py`
-   to bring the counts in this README, the deck page and the AnkiWeb
-   listing up to date.
-5. **Commit** the card, its new clips in `data/audio/` (including
-   `.text_manifest.json`), any new files under `data/cache/` (the
-   dictionary lookups for the new word), and the updated docs.
+**By hand.** One word:
+
+1. `python3 scripts/draft_packet.py slėnis` prints what Wiktionary says the
+   word means and how it inflects, the theme and how its cards read, the
+   cards that already share the English answer, and the allowed
+   vocabulary.
+2. `python3 scripts/add_word.py slėnis --new --pos noun --theme 03` appends
+   a row with the key, gloss and part of speech filled in and lists the
+   word under the theme.
+3. Fill `lt_def`, `en_def`, `lt_example`, `en_example` in the row, following
+   [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md).
+4. `python3 scripts/add_word.py slėnis` checks the row (the QA gate and the
+   root-leak check) and, if it passes, records its four clips. Nothing is
+   recorded while a check fails; `--no-audio` only checks.
+5. `./build_single.sh`, then `python3 scripts/update_numbers.py`.
+6. Commit the row, the theme line, the clips in `data/audio/` (with
+   `.text_manifest.json`), any new files under `data/cache/`, and the docs.
+
+A batch of words: put them in a file, one `word<TAB>theme` per line
+(`<TAB>pos` if Wiktionary has more than one), then
+
+```bash
+python3 scripts/add_word.py --new --list words.tsv
+```
+
+creates the next `data/batches/batchNN.tsv` with a prefilled row per word.
+Fill the columns, then check, record and build the batch as one unit:
+
+```bash
+python3 scripts/verify_defs.py data/batches/batch33.tsv
+python3 scripts/root_leak.py data/batches/batch33.tsv
+python3 scripts/resume_audio.py data/batches/batch33.tsv
+./build_single.sh && python3 scripts/update_numbers.py
+```
+
+`out/review.txt`, written by the gate, shows every card side by side for
+a read-through before recording.
 
 If the QA gate reports no inflection table, Wiktionary has none for the word.
 Write its paradigm into `data/manual_forms.tsv` instead:
@@ -181,16 +209,18 @@ tests, the gate, and an offline build (`.github/workflows/ci.yml`).
 
 ### Releasing
 
-Tag the commit and push the tag:
-
 ```bash
-git tag v1.1.0 && git push origin v1.1.0
+./release.sh v1.1.0
 ```
 
-The release workflow builds the deck offline from that tag and attaches the
-`.apkg` to a GitHub release, which is what the download links point at.
-Update the numbers in this README, `docs/index.html` and `ankiweb/` first;
-`tests/test_docs.py` fails while they disagree with the data.
+That builds, checks that the docs quote the current numbers, tags, and
+pushes. The release workflow then builds the deck offline from the tag and
+attaches the `.apkg` to a GitHub release, which is what the download links
+point at. Without GitHub Actions, upload the local build instead:
+`gh release create v1.1.0 decks/lietuviu_A2.apkg`.
+
+The AnkiWeb listing is updated by importing the new build into Anki
+desktop and sharing it again from there; that step has no script.
 
 ### The card format
 
@@ -211,7 +241,9 @@ key    lt_def    en_word    en_def    lt_example    en_example    pos    [qualif
 ### Layout
 
 ```
+setup.sh          one-time setup: venv, packages, hunspell + lt_LT
 build_single.sh   build the deck
+release.sh        build, check the numbers, tag and push
 scripts/          the pipeline (Python); paths.py says where everything lives
 tests/            pytest suite; no network needed
 data/             deck source: word list, paradigms, accents, caches
@@ -220,6 +252,7 @@ data/audio/       the recordings, ~115 MB
 docs/             the deck page (GitHub Pages)
 ankiweb/          the AnkiWeb listing: description and Share-form fields
 .github/          CI, the release workflow, the correction issue template
+.devcontainer/    a ready environment for GitHub Codespaces
 .claude/skills/   the /add-word skill for Claude Code
 pyproject.toml    pytest and ruff configuration
 ```
@@ -235,7 +268,7 @@ All in `scripts/`.
 | | |
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
-| `add_word.py` | checks new or edited words and records only their audio; `--new` scaffolds a row |
+| `add_word.py` | checks new or edited words and records only their audio; `--new` scaffolds a row, `--new --list` a batch |
 | `draft_packet.py` | everything a drafter needs to write one card, on one screen |
 | `update_numbers.py` | rewrites the counts quoted in the README, deck page and AnkiWeb listing |
 | `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |

@@ -52,3 +52,7 @@
 !.claude/
 !.claude/skills/
 !.claude/skills/**
+!setup.sh
+!release.sh
+!.devcontainer/
+!.devcontainer/*.json

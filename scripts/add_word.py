@@ -27,6 +27,18 @@ the example and their translations, then run the checks as above.
     --pos        noun/verb/adj; needed when Wiktionary has more than one
     --theme      a theme slug from data/THEMES.md, full or partial
     --batch      the batch file to append to (default: the newest)
+
+A batch of words at once:
+
+    python3 scripts/add_word.py --new --list words.tsv
+
+where each line of words.tsv is `word <TAB> theme [<TAB> pos]`; `#` starts a
+comment. The rows go into a NEW batch file (the next number) unless --batch
+says otherwise, so the batch can be checked and recorded as one unit:
+
+    python3 scripts/verify_defs.py data/batches/batch33.tsv
+    python3 scripts/root_leak.py data/batches/batch33.tsv
+    python3 scripts/resume_audio.py data/batches/batch33.tsv
 """
 import argparse
 import re
@@ -94,7 +106,28 @@ def add_to_theme(word, slug):
     return tag
 
 
-def scaffold(word, pos, theme, batch):
+def next_batch_name():
+    last = paths.batch_files()
+    return f"batch{paths.batch_num(last[-1]) + 1 if last else 1}"
+
+
+def read_list(path):
+    """[(word, theme, pos)] from a `word <TAB> theme [<TAB> pos]` file."""
+    out = []
+    for n, line in enumerate(Path(path).read_text(encoding="utf-8")
+                             .splitlines(), 1):
+        line = line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        cols = [c.strip() for c in line.split("\t")] + ["", ""]
+        if not cols[1]:
+            raise SystemExit(f"{path}:{n}: expected `word<TAB>theme[<TAB>pos]`, "
+                             f"got {line!r}")
+        out.append((cols[0].lower(), cols[1], cols[2] or None))
+    return out
+
+
+def scaffold(word, pos, theme, batch, quiet=False):
     """Append a row for a new word with everything a script can fill in."""
     if rows_for(word):
         print(f"{word}: already has a card — edit that row, or add a second "
@@ -136,23 +169,44 @@ def scaffold(word, pos, theme, batch):
     else:
         print(f"{word}: no --theme given; list it in data/a2_zodziai_v2.txt "
               f"before the build, or it lands in tema::be-temos.")
-    print(f"\nFill lt_def, en_def, lt_example, en_example in {target.name} "
-          f"(data/DRAFTING_GUIDE.md), then:\n"
-          f"    python3 scripts/add_word.py {word} --no-audio")
+    if not quiet:
+        print(f"\nFill lt_def, en_def, lt_example, en_example in {target.name} "
+              f"(data/DRAFTING_GUIDE.md), then:\n"
+              f"    python3 scripts/add_word.py {word} --no-audio")
     return 0
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("words", nargs="+")
+    ap.add_argument("words", nargs="*")
     ap.add_argument("--no-audio", action="store_true")
     ap.add_argument("--new", action="store_true",
                     help="scaffold a row for a word that has no card yet")
     ap.add_argument("--pos", choices=POS_CHOICES)
     ap.add_argument("--theme", help="theme slug (with --new)")
     ap.add_argument("--batch", help="batch file to append to (with --new)")
+    ap.add_argument("--list", metavar="FILE",
+                    help="with --new: scaffold every `word<TAB>theme[<TAB>pos]` "
+                         "line of FILE into a new batch file")
     args = ap.parse_args()
 
+    if args.list:
+        if not args.new:
+            ap.error("--list needs --new")
+        todo = read_list(args.list)
+        batch = args.batch or next_batch_name()
+        for _, theme, _ in todo:
+            resolve_theme(theme)        # every theme must resolve before any write
+        rc = 0
+        for word, theme, pos in todo:
+            rc |= scaffold(word, pos or args.pos, theme, batch, quiet=True)
+        print(f"\n{len(todo)} word(s) scaffolded into {batch}.tsv. Fill the "
+              f"columns, then check the whole batch:\n"
+              f"    python3 scripts/verify_defs.py data/batches/{batch}.tsv\n"
+              f"    python3 scripts/root_leak.py data/batches/{batch}.tsv")
+        return rc
+    if not args.words:
+        ap.error("give at least one word, or --new --list FILE")
     if args.new:
         rc = 0
         for w in args.words:

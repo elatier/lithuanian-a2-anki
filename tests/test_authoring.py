@@ -109,3 +109,34 @@ def test_rewrite_leaves_other_numbers_alone():
     text = "116 MB (115,970,047 bytes), 469 paradigms, 1,469 other"
     assert update_numbers.rewrite(text, {469: 470}, Counter()) == \
         "116 MB (115,970,047 bytes), 470 paradigms, 1,469 other"
+
+
+def test_new_list_scaffolds_a_whole_batch_into_the_next_file(workspace,
+                                                              monkeypatch,
+                                                              tmp_path, capsys):
+    b, theme = workspace
+    monkeypatch.setattr(ltcard, "kaikki_entries",
+                        lambda w: TWO if w == "kirsti" else SHELF)
+    lst = tmp_path / "words.tsv"
+    lst.write_text("# a batch\nžvakidė\t02\nkirsti\t04-kasdienis\tverb\n",
+                   encoding="utf-8")
+    assert run(monkeypatch, "--new", "--list", str(lst)) == 0
+    new = (b / "batch2.tsv").read_text(encoding="utf-8")
+    assert new == "žvakidė\t\tshelf\t\t\t\tnoun\nkirsti\t\tto cut\t\t\t\tverb\n"
+    assert "batch2.tsv" in capsys.readouterr().out
+    ltcard.load_themes.cache_clear()
+    t = ltcard.load_themes()
+    assert t["žvakidė"].endswith("02-pastatai-ir-namai")
+    assert t["kirsti"].endswith("04-kasdienis-gyvenimas")
+
+
+def test_new_list_writes_nothing_when_a_theme_is_wrong(workspace, monkeypatch,
+                                                        tmp_path):
+    b, theme = workspace
+    before = theme.read_text(encoding="utf-8")
+    lst = tmp_path / "words.tsv"
+    lst.write_text("žvakidė\t02\nkirsti\t99\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="matches 0 themes"):
+        run(monkeypatch, "--new", "--list", str(lst))
+    assert not (b / "batch2.tsv").exists()
+    assert theme.read_text(encoding="utf-8") == before
