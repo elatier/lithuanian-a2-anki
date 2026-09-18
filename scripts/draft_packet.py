@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """draft_packet.py WORD [--theme SLUG] [--vocab] — everything a drafter needs
-to write the card for WORD, on one screen.
+to write the card for WORD, on one screen. `add_word.py WORD --new` prints
+the same before it scaffolds the row; this is the packet on its own.
 
 Whoever writes the row — a person, or Claude via the add-word skill — starts
 from the same facts: what Wiktionary says the word means and how it inflects,
@@ -10,7 +11,7 @@ what vocabulary a definition may use. The gate then checks the result; this
 just makes a good first draft likely.
 
     python3 scripts/draft_packet.py lentyna
-    python3 scripts/draft_packet.py lentyna --theme 02-pastatai-ir-namai
+    python3 scripts/draft_packet.py lentyna --theme 02
     python3 scripts/draft_packet.py lentyna --vocab      # also list the A2 lemmas
 
 A word not yet in the caches costs one kaikki.org and one Wiktionary lookup;
@@ -21,27 +22,10 @@ import json
 import re
 import sys
 
-import add_word
 import ltcard
 import paths
 
 POS_NAMES = {"noun": "daiktavardis", "verb": "veiksmažodis", "adj": "būdvardis"}
-
-
-def theme_table():
-    """[(slug, what it covers)] from data/THEMES.md, in order."""
-    text = (paths.DATA / "THEMES.md").read_text(encoding="utf-8")
-    return re.findall(r"^\| `([a-z]+::\d\d-[a-z-]+)` \| (.+?) \|$", text, re.M)
-
-
-def resolve_theme(arg):
-    """A full or partial slug -> the full tag, or None (add_word decides)."""
-    if not arg:
-        return None
-    try:
-        return add_word.resolve_theme(arg)
-    except SystemExit:
-        return None
 
 
 def known_lemmas():
@@ -90,16 +74,12 @@ def gloss_heads(en_word):
     return out
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("word")
-    ap.add_argument("--theme", help="theme slug, full or partial")
-    ap.add_argument("--vocab", action="store_true",
-                    help="also list every lemma a definition may use")
-    args = ap.parse_args()
-    word = args.word.strip().lower()
+def packet(word, theme=None, vocab=False, next_steps=True):
+    """Print the packet. `theme` is a column-8 slug (resolved), or None."""
+    word = word.strip().lower()
     manual = ltcard.load_manual_forms()
     themes = ltcard.load_themes()
+    theme_map = ltcard.theme_tags()
     p = print
 
     p(f"=== {word}")
@@ -168,18 +148,16 @@ def main():
 
     # --- theme
     p("\n--- theme")
-    theme = themes.get(word) or resolve_theme(args.theme)
+    theme = themes.get(word) or (theme_map.get(theme) if theme else None)
     if word in themes:
-        p(f"  listed in a2_zodziai_v2.txt under {theme}")
+        p(f"  the card's row says {theme}")
     elif theme:
-        p(f"  proposed: {theme} (pass it to add_word.py --new --theme)")
+        p(f"  chosen: {theme}")
     else:
-        if args.theme:
-            p(f"  '{args.theme}' matches no theme or several. ", end="")
-        p("  not in a2_zodziai_v2.txt yet. Pick exactly one (THEMES.md: prefer "
-          "the concrete situation a learner meets the word in):")
-        for slug, covers in theme_table():
-            p(f"    {slug:38} {covers}")
+        p("  none yet. Pick exactly one for column 8 (THEMES.md: prefer the "
+          "concrete situation a learner meets the word in):")
+        for tag, covers in ltcard.theme_table():
+            p(f"    {tag.split('::', 1)[1]:26} {covers}")
 
     # --- neighbours: how cards in this theme read
     if theme:
@@ -205,25 +183,43 @@ def main():
     lemmas = known_lemmas()
     p(f"\n--- vocabulary: {len(lemmas)} lemmas may appear in the definition "
       f"and example (their inflected forms too); anything else is an A2 "
-      f"warning. --vocab lists them." if not args.vocab else
+      f"warning. --vocab lists them." if not vocab else
       f"\n--- {len(lemmas)} lemmas a definition may use:")
-    if args.vocab:
+    if vocab:
         words = sorted(lemmas)
         for i in range(0, len(words), 10):
             p("  " + " ".join(words[i:i + 10]))
 
+    if not next_steps:
+        return 0
     p("\n--- next")
     if existing:
         p(f"  edit the row in {existing[0][0]}, then")
-        p(f"  python3 scripts/add_word.py {word} --no-audio                # the gate")
+        p(f"  python3 scripts/add_word.py {word}          # check, record, build")
         return 0
     p(f"  python3 scripts/add_word.py {word} --new"
       + (f" --pos {poses[0]}" if len(poses) == 1 else " --pos POS")
-      + (f" --theme {theme.split('::')[1]}" if theme and word not in themes else "")
+      + (f" --theme {theme.split('::')[1]}" if theme else " --theme SLUG")
       + "    # scaffolds the row")
     p("  fill lt_def, en_def, lt_example, en_example (data/DRAFTING_GUIDE.md), then")
-    p(f"  python3 scripts/add_word.py {word} --no-audio                # the gate")
+    p(f"  python3 scripts/add_word.py {word}          # check, record, build")
     return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("word")
+    ap.add_argument("--theme", help="theme slug, full or partial")
+    ap.add_argument("--vocab", action="store_true",
+                    help="also list every lemma a definition may use")
+    args = ap.parse_args()
+    theme = None
+    if args.theme:
+        try:
+            theme = ltcard.resolve_theme(args.theme)
+        except LookupError as exc:
+            print(exc)
+    return packet(args.word, theme, args.vocab)
 
 
 if __name__ == "__main__":

@@ -12,13 +12,14 @@ Checks per word (no human input needed):
   5. A2      definition+example vocabulary stays inside the approved
              A2 list (forms_cache.json) + function words
   6. LEN     definition is short enough for A2 (warn > 12 tokens)
+  7. THEME   column 8 names a theme from data/THEMES.md
 
 Also writes out/review.txt: word | draft def | Wiktionary glosses | EN —
 side by side, so human spot-checking a sample takes seconds per word.
 
 Usage: python3 scripts/verify_defs.py                            # every batch
        python3 scripts/verify_defs.py data/batches/batch32.tsv   # just one
-Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM/QUAL/HEAD) fails.
+Exit code 1 if any hard check (SPELL/GLOSS/LEAK/FORM/QUAL/HEAD/THEME) fails.
 """
 import json
 import re
@@ -253,6 +254,13 @@ def check(path):
                 problems.append(f"QUAL: definition contains the "
                                 f"disambiguating word {hit}")
 
+        # THEME: the row's theme must be one of the taxonomy's slugs
+        if not d.get("theme"):
+            problems.append("THEME: no theme in column 8 (slugs in data/THEMES.md)")
+        elif d["theme"] not in ltcard.theme_tags():
+            problems.append(f"THEME: unknown theme {d['theme']!r} "
+                            f"(slugs in data/THEMES.md)")
+
         # 6 LEN
         if len(d["lt_def"].split()) > 12:
             problems.append(f"LEN: definition {len(d['lt_def'].split())} "
@@ -260,7 +268,7 @@ def check(path):
 
         status = "OK " if not problems else "FAIL" if any(
             p.split(":")[0] in ("SPELL", "GLOSS", "LEAK", "FORM", "QUAL",
-                                "HEAD")
+                                "HEAD", "THEME")
             for p in problems) else "WARN"
         if status == "FAIL":
             hard_fail = True

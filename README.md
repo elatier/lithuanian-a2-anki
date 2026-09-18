@@ -140,54 +140,51 @@ missing clips are left off their cards.
 
 Three ways, by how much you want installed.
 
-**Nothing installed.** Edit a `data/batches/batch*.tsv` file on GitHub
-(one row per card, [format below](#the-card-format)), add the headword
-under a theme in `data/a2_zodziai_v2.txt`, and open a pull request. The CI
-workflow runs the QA gate on it and the report is in the checks. The
-maintainer records the audio and releases.
+**Nothing installed.** Add a row to a `data/batches/batch*.tsv` file on
+GitHub (one row per card, [format below](#the-card-format)) and open a
+pull request. The CI workflow runs the QA gate on it and the report is in
+the checks. The maintainer records the audio and releases.
 
 **In Claude Code.** `/add-word slėnis`, or `/add-word words.tsv` for a
 batch, walks the steps below with the model drafting the cards. It stops
 once for your approval before anything is recorded. Works locally or in a
 Codespace.
 
-**By hand.** One word:
+**By hand.** Three steps: start the row, write it, finish it.
 
-1. `python3 scripts/draft_packet.py slėnis` prints what Wiktionary says the
-   word means and how it inflects, the theme and how its cards read, the
-   cards that already share the English answer, and the allowed
-   vocabulary.
-2. `python3 scripts/add_word.py slėnis --new --pos noun --theme 03` appends
-   a row with the key, gloss and part of speech filled in and lists the
-   word under the theme.
-3. Fill `lt_def`, `en_def`, `lt_example`, `en_example` in the row, following
-   [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md).
-4. `python3 scripts/add_word.py slėnis` checks the row (the QA gate and the
-   root-leak check) and, if it passes, records its four clips. Nothing is
-   recorded while a check fails; `--no-audio` only checks.
-5. `./build_single.sh`, then `python3 scripts/update_numbers.py`.
-6. Commit the row, the theme line, the clips in `data/audio/` (with
-   `.text_manifest.json`), any new files under `data/cache/`, and the docs.
+1. **Start.** `python3 scripts/add_word.py slėnis --new --theme 03` prints
+   the drafting packet (what Wiktionary says the word means and how it
+   inflects, how the theme's cards read, the cards that already share the
+   English answer, the allowed vocabulary) and appends a row with the key,
+   part of speech, theme and gloss filled in. Without `--theme` it prints
+   the packet and the list of themes and writes nothing.
+2. **Write** `lt_def`, `en_def`, `lt_example`, `en_example` in the row,
+   following [`data/DRAFTING_GUIDE.md`](data/DRAFTING_GUIDE.md).
+3. **Finish.** `python3 scripts/add_word.py slėnis` checks the row (the QA
+   gate and the root-leak check), records its four clips, rebuilds the deck
+   and refreshes the numbers in the docs. Nothing is recorded while a check
+   fails; `--no-audio` only checks. Then commit the row, the clips in
+   `data/audio/` (with `.text_manifest.json`), any new files under
+   `data/cache/`, and the docs.
 
-A batch of words: put them in a file, one `word<TAB>theme` per line
-(`<TAB>pos` if Wiktionary has more than one), then
+A batch of words is the same three steps on a file. Put the words in
+`words.tsv`, one `word<TAB>theme` per line (`<TAB>pos` if Wiktionary has
+more than one), then:
 
 ```bash
 python3 scripts/add_word.py --new --list words.tsv
 ```
 
 creates the next `data/batches/batchNN.tsv` with a prefilled row per word.
-Fill the columns, then check, record and build the batch as one unit:
+Write the columns, then:
 
 ```bash
-python3 scripts/verify_defs.py data/batches/batch33.tsv
-python3 scripts/root_leak.py data/batches/batch33.tsv
-python3 scripts/resume_audio.py data/batches/batch33.tsv
-./build_single.sh && python3 scripts/update_numbers.py
+python3 scripts/add_word.py --batch batch33
 ```
 
-`out/review.txt`, written by the gate, shows every card side by side for
-a read-through before recording.
+checks, records, builds and refreshes the numbers for the whole batch.
+`out/review.txt`, written by the gate, shows every card side by side for a
+read-through.
 
 If the QA gate reports no inflection table, Wiktionary has none for the word.
 Write its paradigm into `data/manual_forms.tsv` instead:
@@ -220,11 +217,14 @@ desktop and sharing it again from there; that step has no script.
 One row per card, tab-separated, no header:
 
 ```
-key    lt_def    en_word    en_def    lt_example    en_example    pos    [qualifier]
+key    lt_def    en_word    en_def    lt_example    en_example    pos    theme    [qualifier]
 ```
 
 - `key` is normally the headword. A word taught in two senses gets one row per
   sense, keyed `headword#sense` (e.g. `žibintas#auto`, `žibintas`).
+- `theme` is one of the eighteen slugs in `data/THEMES.md`, without the
+  group prefix: `02-pastatai-ir-namai`. It becomes the `tema::` tag and the
+  subdeck.
 - `qualifier` is optional. It is shown in lighter type beside the headword to
   tell the senses apart (`gatvės žibintas`, `automobilio žibintas`), and the
   definition must not contain it.
@@ -261,11 +261,11 @@ All in `scripts/`.
 | | |
 |---|---|
 | `build_single.py` (via `../build_single.sh`) | builds the `.apkg`; `--subdecks tema\|batch\|none`, default `tema` |
-| `add_word.py` | checks new or edited words and records only their audio; `--new` scaffolds a row, `--new --list` a batch |
-| `draft_packet.py` | everything a drafter needs to write one card, on one screen |
+| `add_word.py` | the word workflow: `--new` prints the packet and scaffolds a row (`--list` a batch); a bare run checks, records, builds and refreshes the numbers |
+| `draft_packet.py` | the drafting packet on its own; `add_word.py --new` prints it |
 | `update_numbers.py` | rewrites the counts quoted in the README, deck page and AnkiWeb listing |
 | `resume_audio.py` | records missing or outdated clips (LIEPA, rate-limited, resumable); the build runs it |
-| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD |
+| `verify_defs.py` | the QA gate: SPELL, GLOSS, LEAK, FORM, A2, ORDER, LEN, QUAL, HEAD, THEME |
 | `root_leak.py` | catches definitions that share a root with their headword |
 | `check_forms.py` | hunspell-verifies every form in `manual_forms.tsv` |
 | `gen_forms.py` | drafts a `manual_forms.tsv` line for a regular word |
@@ -308,8 +308,7 @@ All in `data/`.
 |---|---|
 | `batches/batch*.tsv` | the 1,593 cards |
 | `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
-| `a2_zodziai_v2.txt` | the word list, grouped by theme; the source of the `tema::` tags |
-| `THEMES.md` | the theme taxonomy |
+| `THEMES.md` | the theme taxonomy; column 8 of every row names one of its slugs |
 | `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |
 | `extra_def_vocab.tsv` | words allowed inside definitions but not taught as cards |
 | `function_words.txt` | grammar words that always count as known A2 vocabulary |

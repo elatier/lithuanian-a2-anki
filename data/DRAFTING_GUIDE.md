@@ -10,7 +10,11 @@ Check as you go:
 python3 scripts/add_word.py WORD --no-audio
 ```
 
-`[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD) must be fixed.
+Start a row with `python3 scripts/add_word.py WORD --new --theme SLUG`: it
+prints the drafting packet and fills in everything but the four text
+columns.
+
+`[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD, THEME) must be fixed.
 `[WARN]` (LEN, A2, ORDER) should be fixed if it is easy, and is acceptable if
 it is not.
 

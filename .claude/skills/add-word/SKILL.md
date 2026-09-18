@@ -21,53 +21,49 @@ If `.venv/bin/python` is missing or `hunspell` is not on the path, run
 `./setup.sh` (it may need the user's approval to install hunspell; the
 dictionary is in the repo). Use `.venv/bin/python` for every script below.
 
-## 1. Read the packet for each word
+## 1. Start each word
 
 ```bash
-.venv/bin/python scripts/draft_packet.py WORD
+.venv/bin/python scripts/add_word.py WORD --new
 ```
 
-Read all of it. It tells you whether the word already has a card, what
-Wiktionary says it means and how it inflects, which theme it is in or which
-to choose, how that theme's cards read, and which cards already answer
-with the same English word.
-
-- **Already in the deck**: leave it out and tell the user, unless they
-  asked for a second sense (key it `WORD#sense`, give both rows a
-  qualifier, keep the primary sense on the bare key — README, "The card
-  format").
-- **No inflection table**: the paradigm goes in `data/manual_forms.tsv`.
-  Draft it with `gen_forms.py WORD POS`, run `check_forms.py`, then
-  `apply_accents.py`. Stress marks that neither source has must come from
-  the VDU Kirčiuoklis; the script writes `out/needs_accents.txt` for the
-  user to paste there. Say so, and never invent an accent.
-
-## 2. Choose the theme and the part of speech
-
-One theme per word, from the packet's list, following `data/THEMES.md`:
-prefer the concrete situation a learner meets the word in. If the user's
-list gives themes, use them. The part of speech is the Wiktionary one the
-card teaches.
-
-## 3. Scaffold
-
-One word:
+Without `--theme` this prints the drafting packet and the list of themes
+and writes nothing. Read all of it: whether the word already has a card,
+what Wiktionary says it means and how it inflects, and which cards already
+answer with the same English word. Then choose one theme, following
+`data/THEMES.md` (prefer the concrete situation a learner meets the word
+in; if the user's list gives themes, use them), and scaffold:
 
 ```bash
-.venv/bin/python scripts/add_word.py WORD --new --pos POS --theme SLUG
+.venv/bin/python scripts/add_word.py WORD --new --theme SLUG [--pos POS]
 ```
+
+That appends a row to the newest batch file with the key, part of speech,
+theme and gloss filled in. `--pos` is needed only when Wiktionary has more
+than one part of speech.
 
 A batch: write `out/words.tsv` with one `word<TAB>theme[<TAB>pos]` line per
-word (or use the user's file), then
+word (or use the user's file; run `add_word.py WORD --new` for any word
+whose theme you need to look at first), then
 
 ```bash
 .venv/bin/python scripts/add_word.py --new --list out/words.tsv
 ```
 
 which creates the next `data/batches/batchNN.tsv` with a prefilled row per
-word and lists every word under its theme.
+word.
 
-## 4. Write the four columns
+- **Already in the deck**: leave it out and tell the user, unless they
+  asked for a second sense (key it `WORD#sense`, give both rows a
+  qualifier in column 9, keep the primary sense on the bare key — README,
+  "The card format").
+- **No inflection table**: the paradigm goes in `data/manual_forms.tsv`.
+  Draft it with `gen_forms.py WORD POS`, run `check_forms.py`, then
+  `apply_accents.py`. Stress marks that neither source has must come from
+  the VDU Kirčiuoklis; the script writes `out/needs_accents.txt` for the
+  user to paste there. Say so, and never invent an accent.
+
+## 2. Write the four columns
 
 Edit each row: `lt_def`, `en_def`, `lt_example`, `en_example`. Follow
 `data/DRAFTING_GUIDE.md` and the register of the neighbouring cards in
@@ -86,48 +82,37 @@ the packet. In short:
   `data/gloss_overrides.tsv` with the reason.
 - `en_def` is a plain rendering of `lt_def`.
 
-## 5. Run the gate until it passes
-
-One word:
+## 3. Check until clean, then finish
 
 ```bash
-.venv/bin/python scripts/add_word.py WORD --no-audio
+.venv/bin/python scripts/add_word.py WORD --no-audio        # one word
+.venv/bin/python scripts/add_word.py --batch batchNN --no-audio   # a batch
 ```
 
-A batch, as one unit:
-
-```bash
-.venv/bin/python scripts/verify_defs.py data/batches/batchNN.tsv
-.venv/bin/python scripts/root_leak.py data/batches/batchNN.tsv
-```
-
-Fix every `[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD) and every
+Fix every `[FAIL]` (SPELL, GLOSS, LEAK, FORM, QUAL, HEAD, THEME) and every
 `[WARN]` that is easy (LEN, A2, ORDER). Root-leak hits are for judgement:
-a shared prefix is not a shared root. Rerun after each edit.
-
-## 6. Record, build, update the numbers
+a shared prefix is not a shared root. Rerun after each edit. When it is
+clean, drop `--no-audio`:
 
 ```bash
-.venv/bin/python scripts/add_word.py WORD            # one word
-.venv/bin/python scripts/resume_audio.py data/batches/batchNN.tsv   # a batch
-./build_single.sh
-.venv/bin/python scripts/update_numbers.py
-.venv/bin/python -m pytest -q tests/test_docs.py
+.venv/bin/python scripts/add_word.py WORD
+.venv/bin/python scripts/add_word.py --batch batchNN
 ```
 
-Recording is paced for the public synthesiser: about four clips a word,
-a few seconds each. A batch of thirty words takes around ten minutes; the
-script resumes if interrupted.
+That records the clips, rebuilds the deck and refreshes the numbers in the
+docs. Recording is paced for the public synthesiser: about four clips a
+word, a few seconds each; a batch of thirty words takes around ten
+minutes, and the script resumes if interrupted.
 
-## 7. Commit
+## 4. Commit
 
-Stage the batch file, `data/a2_zodziai_v2.txt`, the new clips and
-`data/audio/.text_manifest.json`, any new files under `data/cache/`, any
-`manual_forms.tsv` or `gloss_overrides.tsv` rows, and the docs the numbers
-script touched. Message: `Add WORD (theme)` or `Add batchNN: N words`.
-If the user wants a release, `./release.sh vX.Y.Z`.
+Stage the batch file, the new clips and `data/audio/.text_manifest.json`,
+any new files under `data/cache/`, any `manual_forms.tsv` or
+`gloss_overrides.tsv` rows, and the docs the numbers step touched.
+Message: `Add WORD (theme)` or `Add batchNN: N words`. If the user wants a
+release, `./release.sh vX.Y.Z`.
 
-## 8. Report
+## 5. Report
 
 End with every card as written — key, definition, English word, example,
 translation — and any gate warnings you left in place, so the user can

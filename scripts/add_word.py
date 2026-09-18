@@ -1,44 +1,43 @@
 #!/usr/bin/env python3
-"""add_word.py WORD ... — check new or edited words end to end, then record
-only their audio.
+"""add_word.py — add or fix words in the deck: start, check, record, build.
 
-Write the card first: a row in a data/batches/batch*.tsv file (see "The card
-format" in README.md) and the headword under a theme in
-data/a2_zodziai_v2.txt. Then:
+Start a word:
 
-    python3 scripts/add_word.py žibintas
-    ./build_single.sh
+    python3 scripts/add_word.py lentyna --new --theme 02
 
-For each word this finds its rows, checks the theme, runs the QA gate and the
-root-leak check on just those rows, and records the clips that are missing or
-whose text changed — four per card, a few seconds each. Nothing is recorded
-while a hard QA check fails, so a typo never costs a recording.
+prints the drafting packet — what Wiktionary says the word means and how it
+inflects, how the theme's cards read, which cards already share the English
+answer, the allowed vocabulary — and appends a row to the newest batch file
+with the key, part of speech, theme and Wiktionary's first gloss filled in.
+Without --theme it prints the packet, with the list of themes, and writes
+nothing. Then fill lt_def, en_def, lt_example, en_example in the row
+(data/DRAFTING_GUIDE.md).
 
-    --no-audio   stop after the checks
+Finish it:
 
-Starting a word from nothing:
+    python3 scripts/add_word.py lentyna
 
-    python3 scripts/draft_packet.py lentyna          # what to write, and how
-    python3 scripts/add_word.py lentyna --new --pos noun --theme 02-pastatai-ir-namai
+runs the QA gate and the root-leak check on the word's rows, records the
+clips that are missing or whose text changed (four per card, a few seconds
+each), rebuilds the deck and refreshes the numbers in the docs. Nothing is
+recorded while a hard check fails, so a typo never costs a recording. Then
+commit: the row, the clips in data/audio/, new files under data/cache/,
+and the docs.
 
---new appends a row with the key, the part of speech and Wiktionary's first
-gloss filled in, and lists the word under the theme. Fill the definition,
-the example and their translations, then run the checks as above.
+A batch:
+
+    python3 scripts/add_word.py --new --list words.tsv    # word<TAB>theme[<TAB>pos]
+    python3 scripts/add_word.py --batch batch33           # finish every word in it
+
+--list scaffolds every word into a NEW batch file (the next number), so the
+batch can be checked, recorded and built as one unit.
+
+    --no-audio   check only
+    --no-build   check and record, but do not rebuild the deck
     --pos        noun/verb/adj; needed when Wiktionary has more than one
-    --theme      a theme slug from data/THEMES.md, full or partial
-    --batch      the batch file to append to (default: the newest)
-
-A batch of words at once:
-
-    python3 scripts/add_word.py --new --list words.tsv
-
-where each line of words.tsv is `word <TAB> theme [<TAB> pos]`; `#` starts a
-comment. The rows go into a NEW batch file (the next number) unless --batch
-says otherwise, so the batch can be checked and recorded as one unit:
-
-    python3 scripts/verify_defs.py data/batches/batch33.tsv
-    python3 scripts/root_leak.py data/batches/batch33.tsv
-    python3 scripts/resume_audio.py data/batches/batch33.tsv
+    --theme      a theme from data/THEMES.md: "02-pastatai-ir-namai", "02", "pastatai"
+    --batch      with --new: the batch file to append to (default: the newest);
+                 alone: finish every word in that batch file
 """
 import argparse
 import re
@@ -46,14 +45,17 @@ import sys
 import tempfile
 from pathlib import Path
 
+import build_single
+import draft_packet
 import ltcard
 import paths
 import resume_audio
 import root_leak
+import update_numbers
 import verify_defs
 
 TEMPLATE = ("key\tlt_def\ten_word\ten_def\tlt_example\ten_example\tpos"
-            "\t[qualifier]")
+            "\ttheme\t[qualifier]")
 POS_CHOICES = ["noun", "verb", "adj", "num", "pron", "adv"]
 
 
@@ -69,42 +71,25 @@ def rows_for(word):
     return out
 
 
-def theme_headings():
-    """[(line index, tag)] for every theme heading in a2_zodziai_v2.txt."""
-    out = []
-    for i, line in enumerate(paths.THEME_FILE.read_text(encoding="utf-8")
-                             .splitlines()):
-        if line.startswith("#") and "::" in line and " " not in line.strip("# "):
-            out.append((i, line.lstrip("# ").strip()))
-    return out
+def batch_path(name):
+    return paths.BATCHES / (name if name.endswith(".tsv") else name + ".tsv")
+
+
+def headwords_in(batch):
+    p = batch_path(batch)
+    if not p.exists():
+        raise SystemExit(f"no such batch file: {p}")
+    return sorted({k.split("#")[0] for k in ltcard.load_defs(str(p))})
 
 
 def resolve_theme(slug):
-    """A theme tag from a full or partial slug: "egzaminas::02-pastatai-ir-namai",
-    "02-pastatai-ir-namai", "02" or "pastatai" all name the same theme."""
-    heads = theme_headings()
-    hits = [tag for _, tag in heads
-            if tag == slug or tag.split("::")[-1] == slug
-            or tag.split("::")[-1].startswith(slug) or slug in tag]
-    if len(hits) != 1:
-        raise SystemExit(f"--theme {slug!r} matches {len(hits)} themes; use one "
-                         f"of:\n  " + "\n  ".join(t for _, t in heads))
-    return hits[0]
+    try:
+        return ltcard.resolve_theme(slug)
+    except LookupError as exc:
+        raise SystemExit(f"--{exc}") from None
 
 
-def add_to_theme(word, slug):
-    """List `word` at the end of the theme whose tag matches `slug`."""
-    tag = resolve_theme(slug)
-    heads = theme_headings()
-    lines = paths.THEME_FILE.read_text(encoding="utf-8").splitlines()
-    i = next(j for j, t in heads if t == tag)
-    end = next((j for j, _ in heads if j > i), len(lines))
-    while end > i + 1 and not lines[end - 1].strip():
-        end -= 1
-    lines.insert(end, word)
-    paths.THEME_FILE.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return tag
-
+# -------------------------------------------------------------- start ----
 
 def next_batch_name():
     last = paths.batch_files()
@@ -128,13 +113,19 @@ def read_list(path):
 
 
 def scaffold(word, pos, theme, batch, quiet=False):
-    """Append a row for a new word with everything a script can fill in."""
+    """Print the packet and append a row with everything a script can fill."""
     if rows_for(word):
         print(f"{word}: already has a card — edit that row, or add a second "
               f"sense keyed {word}#sense (README, 'The card format').")
         return 1
-    if theme:
-        resolve_theme(theme)            # fail before anything is written
+    theme = resolve_theme(theme) if theme else None
+    if not quiet:
+        draft_packet.packet(word, theme, next_steps=False)
+        print()
+    if not theme:
+        print(f"{word}: choose a theme from the list above and rerun with "
+              f"--theme; nothing written.")
+        return 1
     entries = ltcard.kaikki_entries(word)
     poses = sorted({e.get("pos") for e in entries} & ltcard.POSES)
     if not pos:
@@ -148,88 +139,53 @@ def scaffold(word, pos, theme, batch, quiet=False):
     gloss = re.sub(r"\s+", " ", re.split(r"[;,]", gloss)[0]).strip()
     if pos == "verb" and gloss and not gloss.startswith("to "):
         gloss = "to " + gloss
-    if batch:
-        target = paths.BATCHES / (batch if batch.endswith(".tsv") else batch + ".tsv")
-    else:
-        target = paths.batch_files()[-1]
+    target = batch_path(batch) if batch else paths.batch_files()[-1]
     existing = target.read_text(encoding="utf-8") if target.exists() else ""
     if existing and not existing.endswith("\n"):
         existing += "\n"
-    row = "\t".join([word, "", gloss, "", "", "", pos])
+    row = "\t".join([word, "", gloss, "", "", "", pos, theme])
     target.write_text(existing + row + "\n", encoding="utf-8")
+    ltcard.load_themes.cache_clear()
     print(f"{word}: row appended to {target.name}\n    {row}")
     if not gloss:
         print("    (no Wiktionary gloss: the GLOSS check will need a row in "
               "data/gloss_overrides.tsv)")
-    if theme:
-        if word in ltcard.load_themes():
-            print(f"{word}: already listed under {ltcard.load_themes()[word]}")
-        else:
-            print(f"{word}: listed under {add_to_theme(word, theme)}")
-    else:
-        print(f"{word}: no --theme given; list it in data/a2_zodziai_v2.txt "
-              f"before the build, or it lands in tema::be-temos.")
     if not quiet:
         print(f"\nFill lt_def, en_def, lt_example, en_example in {target.name} "
               f"(data/DRAFTING_GUIDE.md), then:\n"
-              f"    python3 scripts/add_word.py {word} --no-audio")
+              f"    python3 scripts/add_word.py {word}")
     return 0
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("words", nargs="*")
-    ap.add_argument("--no-audio", action="store_true")
-    ap.add_argument("--new", action="store_true",
-                    help="scaffold a row for a word that has no card yet")
-    ap.add_argument("--pos", choices=POS_CHOICES)
-    ap.add_argument("--theme", help="theme slug (with --new)")
-    ap.add_argument("--batch", help="batch file to append to (with --new)")
-    ap.add_argument("--list", metavar="FILE",
-                    help="with --new: scaffold every `word<TAB>theme[<TAB>pos]` "
-                         "line of FILE into a new batch file")
-    args = ap.parse_args()
+def scaffold_list(path, pos, batch):
+    todo = read_list(path)
+    batch = batch or next_batch_name()
+    for _, theme, _ in todo:
+        resolve_theme(theme)            # every theme must resolve before any write
+    rc = 0
+    for word, theme, p in todo:
+        rc |= scaffold(word, p or pos, theme, batch, quiet=True)
+    print(f"\n{len(todo)} word(s) scaffolded into {batch}.tsv. Fill the "
+          f"columns, then:\n    python3 scripts/add_word.py --batch {batch}")
+    return rc
 
-    if args.list:
-        if not args.new:
-            ap.error("--list needs --new")
-        todo = read_list(args.list)
-        batch = args.batch or next_batch_name()
-        for _, theme, _ in todo:
-            resolve_theme(theme)        # every theme must resolve before any write
-        rc = 0
-        for word, theme, pos in todo:
-            rc |= scaffold(word, pos or args.pos, theme, batch, quiet=True)
-        print(f"\n{len(todo)} word(s) scaffolded into {batch}.tsv. Fill the "
-              f"columns, then check the whole batch:\n"
-              f"    python3 scripts/verify_defs.py data/batches/{batch}.tsv\n"
-              f"    python3 scripts/root_leak.py data/batches/{batch}.tsv")
-        return rc
-    if not args.words:
-        ap.error("give at least one word, or --new --list FILE")
-    if args.new:
-        rc = 0
-        for w in args.words:
-            rc |= scaffold(w.strip().lower(), args.pos, args.theme, args.batch)
-        return rc
 
-    themes = ltcard.load_themes()
+# ------------------------------------------------------------- finish ----
+
+def finish(words, no_audio=False, no_build=False):
+    """Check the words' rows; if clean, record, build and refresh the docs."""
     rows, problems = [], []
-    for w in args.words:
+    for w in words:
         found = rows_for(w)
         if not found:
             problems.append(
-                f"{w}: no card. Add a row to a data/batches/batch*.tsv file:\n"
-                f"    {TEMPLATE}")
+                f"{w}: no card. Start one with `add_word.py {w} --new "
+                f"--theme ...`, or add a row to a data/batches/batch*.tsv "
+                f"file:\n    {TEMPLATE}")
             continue
         for f, _ in found:
             print(f"{w}: {f.name}")
         rows += [line for _, line in found]
-        if w not in themes:
-            problems.append(
-                f"{w}: no theme. List it under a theme heading in "
-                f"data/a2_zodziai_v2.txt (themes: data/THEMES.md), or it "
-                f"lands in tema::be-temos.")
     for p in problems:
         print(f"\n✗ {p}")
     if not rows:
@@ -249,7 +205,7 @@ def main():
                   "`python3 scripts/gen_forms.py WORD POS` into "
                   "data/manual_forms.tsv.")
             return 1
-        if args.no_audio:
+        if no_audio:
             return 0
 
         print("\n--- audio")
@@ -257,10 +213,51 @@ def main():
     if rc:
         print("\nSome clips could not be recorded; rerun later.")
         return rc
-    print("\nDone. Now build: ./build_single.sh")
-    print("New dictionary lookups land in data/cache/ — commit them with "
-          "the card, so the next build needs no network.")
+    if no_build:
+        print("\nRecorded. Build with ./build_single.sh when ready.")
+        return 0
+
+    print("\n--- build")
+    build_single.main(["--no-fetch"])
+    print("\n--- numbers")
+    update_numbers.main()
+    print("\nDone. Commit the row(s), the new clips in data/audio/ (with "
+          ".text_manifest.json), new files under data/cache/, and the docs.")
     return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("words", nargs="*")
+    ap.add_argument("--new", action="store_true",
+                    help="start a word that has no card yet")
+    ap.add_argument("--list", metavar="FILE",
+                    help="with --new: every `word<TAB>theme[<TAB>pos]` line "
+                         "of FILE into a new batch file")
+    ap.add_argument("--pos", choices=POS_CHOICES)
+    ap.add_argument("--theme", help="theme from data/THEMES.md, full or partial")
+    ap.add_argument("--batch", help="batch file: append to it (--new) or "
+                                    "finish every word in it")
+    ap.add_argument("--no-audio", action="store_true", help="check only")
+    ap.add_argument("--no-build", action="store_true",
+                    help="check and record, but do not rebuild the deck")
+    args = ap.parse_args()
+    words = [w.strip().lower() for w in args.words]
+
+    if args.new:
+        if args.list:
+            return scaffold_list(args.list, args.pos, args.batch)
+        if not words:
+            ap.error("--new needs a word, or --list FILE")
+        rc = 0
+        for w in words:
+            rc |= scaffold(w, args.pos, args.theme, args.batch)
+        return rc
+    if args.batch and not words:
+        words = headwords_in(args.batch)
+    if not words:
+        ap.error("give a word, --batch NAME, or --new")
+    return finish(words, args.no_audio, args.no_build)
 
 
 if __name__ == "__main__":

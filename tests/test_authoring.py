@@ -1,7 +1,6 @@
 """The authoring helpers: the drafting packet, --new scaffolding and the
 numbers updater. Offline; the dictionary lookups are faked where a word
 has no cache."""
-import shutil
 import sys
 from collections import Counter
 
@@ -13,25 +12,24 @@ import ltcard
 import paths
 import update_numbers
 
-SHELF = [{"pos": "noun", "senses": [{"glosses": ["shelf"]}], "forms": []}]
+SHELF = [{"pos": "noun", "senses": [{"glosses": ["shelf"]}],
+          "forms": [{"form": "lentynos", "tags": ["genitive", "singular"]}]}]
 TWO = [{"pos": "noun", "senses": [{"glosses": ["a cut"]}], "forms": []},
        {"pos": "verb", "senses": [{"glosses": ["cut, chop"]}], "forms": []}]
 
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch, no_network):
-    """A batches folder with one card and a copy of the real theme list."""
+    """A batches folder with one card; words outside the caches are faked."""
     b = tmp_path / "batches"
     b.mkdir()
-    (b / "batch1.tsv").write_text("namas\tdef\thouse\tdef\tpvz\tex\tnoun\n",
-                                  encoding="utf-8")
-    theme = tmp_path / "themes.txt"
-    shutil.copy(paths.THEME_FILE, theme)
+    (b / "batch1.tsv").write_text(
+        "namas\tdef\thouse\tdef\tpvz\tex\tnoun\t02-pastatai-ir-namai\n",
+        encoding="utf-8")
     monkeypatch.setattr(paths, "BATCHES", b)
-    monkeypatch.setattr(paths, "THEME_FILE", theme)
-    monkeypatch.setattr(ltcard, "THEME_FILE", theme)
+    monkeypatch.setattr(ltcard, "wikt_lt_tables", lambda w: [])
     ltcard.load_themes.cache_clear()
-    yield b, theme
+    yield b
     ltcard.load_themes.cache_clear()
 
 
@@ -40,37 +38,50 @@ def run(monkeypatch, *argv):
     return add_word.main()
 
 
-def test_new_appends_a_prefilled_row_and_lists_the_theme(workspace, monkeypatch):
-    b, theme = workspace
+def test_new_prints_the_packet_and_appends_a_prefilled_row(workspace,
+                                                            monkeypatch, capsys):
+    b = workspace
     monkeypatch.setattr(ltcard, "kaikki_entries", lambda w: SHELF)
     assert run(monkeypatch, "žvakidė", "--new", "--theme", "02") == 0
+    out = capsys.readouterr().out
+    assert "glosses: shelf" in out and "chosen: egzaminas::02-pastatai-ir-namai" in out
+    assert "lentynos (genitive singular)" in out
     assert (b / "batch1.tsv").read_text(encoding="utf-8").endswith(
-        "žvakidė\t\tshelf\t\t\t\tnoun\n")
-    lines = theme.read_text(encoding="utf-8").splitlines()
-    i = lines.index("žvakidė")
-    assert lines[i + 1] == "# egzaminas::03-gamta-regionas"     # end of theme 02
-    ltcard.load_themes.cache_clear()
+        "žvakidė\t\tshelf\t\t\t\tnoun\t02-pastatai-ir-namai\n")
     assert ltcard.load_themes()["žvakidė"] == "egzaminas::02-pastatai-ir-namai"
+
+
+def test_new_without_a_theme_shows_the_choices_and_writes_nothing(workspace,
+                                                                  monkeypatch,
+                                                                  capsys):
+    b = workspace
+    monkeypatch.setattr(ltcard, "kaikki_entries", lambda w: SHELF)
+    before = (b / "batch1.tsv").read_text(encoding="utf-8")
+    assert run(monkeypatch, "žvakidė", "--new") == 1
+    out = capsys.readouterr().out
+    assert "18-kalba-ir-gramatika" in out and "rerun with --theme" in out
+    assert (b / "batch1.tsv").read_text(encoding="utf-8") == before
 
 
 def test_new_prefixes_verbs_with_to_and_needs_pos_when_ambiguous(workspace,
                                                                   monkeypatch,
                                                                   capsys):
-    b, _ = workspace
+    b = workspace
     monkeypatch.setattr(ltcard, "kaikki_entries", lambda w: TWO)
-    assert run(monkeypatch, "kirsti", "--new") == 1
+    assert run(monkeypatch, "kirsti", "--new", "--theme", "04") == 1
     assert "pass --pos" in capsys.readouterr().out
-    assert run(monkeypatch, "kirsti", "--new", "--pos", "verb") == 0
-    assert "kirsti\t\tto cut\t\t\t\tverb\n" in (b / "batch1.tsv").read_text()
+    assert run(monkeypatch, "kirsti", "--new", "--theme", "04", "--pos", "verb") == 0
+    assert "kirsti\t\tto cut\t\t\t\tverb\t04-kasdienis-gyvenimas\n" \
+        in (b / "batch1.tsv").read_text()
 
 
 def test_new_refuses_an_existing_word_and_an_unknown_theme(workspace,
                                                             monkeypatch,
                                                             capsys):
     monkeypatch.setattr(ltcard, "kaikki_entries", lambda w: SHELF)
-    assert run(monkeypatch, "namas", "--new") == 1
+    assert run(monkeypatch, "namas", "--new", "--theme", "02") == 1
     assert "already has a card" in capsys.readouterr().out
-    with pytest.raises(SystemExit, match="matches 0 themes"):
+    with pytest.raises(SystemExit, match="matches 0 of"):
         run(monkeypatch, "lentyna", "--new", "--theme", "99-nonsense")
 
 
@@ -80,7 +91,7 @@ def test_packet_for_a_deck_word(monkeypatch, capsys, no_network):
     out = capsys.readouterr().out
     assert "ALREADY IN THE DECK" in out
     assert "glosses: journey" in out and "kelionėje (locative singular)" in out
-    assert "egzaminas::06-keliones" in out
+    assert "the card's row says egzaminas::06-keliones" in out
     assert "reisas" in out                              # answers 'trip' too
     assert "edit the row in batch6.tsv" in out and "--new" not in out
 
@@ -92,7 +103,7 @@ def test_packet_for_an_unknown_word_lists_the_themes(monkeypatch, capsys,
     monkeypatch.setattr(sys, "argv", ["draft_packet.py", "zzz"])
     draft_packet.main()
     out = capsys.readouterr().out
-    assert "no entry" in out and "papildoma::18-kalba-ir-gramatika" in out
+    assert "no entry" in out and "18-kalba-ir-gramatika" in out
     assert "ALREADY" not in out
 
 
@@ -114,7 +125,7 @@ def test_rewrite_leaves_other_numbers_alone():
 def test_new_list_scaffolds_a_whole_batch_into_the_next_file(workspace,
                                                               monkeypatch,
                                                               tmp_path, capsys):
-    b, theme = workspace
+    b = workspace
     monkeypatch.setattr(ltcard, "kaikki_entries",
                         lambda w: TWO if w == "kirsti" else SHELF)
     lst = tmp_path / "words.tsv"
@@ -122,9 +133,9 @@ def test_new_list_scaffolds_a_whole_batch_into_the_next_file(workspace,
                    encoding="utf-8")
     assert run(monkeypatch, "--new", "--list", str(lst)) == 0
     new = (b / "batch2.tsv").read_text(encoding="utf-8")
-    assert new == "žvakidė\t\tshelf\t\t\t\tnoun\nkirsti\t\tto cut\t\t\t\tverb\n"
-    assert "batch2.tsv" in capsys.readouterr().out
-    ltcard.load_themes.cache_clear()
+    assert new == ("žvakidė\t\tshelf\t\t\t\tnoun\t02-pastatai-ir-namai\n"
+                   "kirsti\t\tto cut\t\t\t\tverb\t04-kasdienis-gyvenimas\n")
+    assert "add_word.py --batch batch2" in capsys.readouterr().out
     t = ltcard.load_themes()
     assert t["žvakidė"].endswith("02-pastatai-ir-namai")
     assert t["kirsti"].endswith("04-kasdienis-gyvenimas")
@@ -132,11 +143,9 @@ def test_new_list_scaffolds_a_whole_batch_into_the_next_file(workspace,
 
 def test_new_list_writes_nothing_when_a_theme_is_wrong(workspace, monkeypatch,
                                                         tmp_path):
-    b, theme = workspace
-    before = theme.read_text(encoding="utf-8")
+    b = workspace
     lst = tmp_path / "words.tsv"
     lst.write_text("žvakidė\t02\nkirsti\t99\n", encoding="utf-8")
-    with pytest.raises(SystemExit, match="matches 0 themes"):
+    with pytest.raises(SystemExit, match="matches 0 of"):
         run(monkeypatch, "--new", "--list", str(lst))
     assert not (b / "batch2.tsv").exists()
-    assert theme.read_text(encoding="utf-8") == before

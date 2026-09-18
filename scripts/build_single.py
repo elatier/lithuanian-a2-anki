@@ -61,7 +61,7 @@ def deck_for(name, decks):
     return decks[name]
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("-o", "--out", default=str(paths.DECKS / "lietuviu_A2.apkg"))
     ap.add_argument("--deck", default="Lietuvių A2")
@@ -75,7 +75,7 @@ def main():
                     help="do not contact the synthesiser at all; cards whose "
                          "clips are missing are still built, just without "
                          "that recording")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     files = [str(f) for f in paths.batch_files()]
     audio_incomplete = False

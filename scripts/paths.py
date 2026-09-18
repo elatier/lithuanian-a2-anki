@@ -1,7 +1,7 @@
 """paths.py — where everything lives, so the scripts run from any directory.
 
     data/            deck source, tracked
-    data/batches/    batch*.tsv, one row per card
+    data/batches/    batch*.tsv, one row per card (theme in column 8)
     data/cache/      kaikki.org and Wiktionary lookups, tracked so a build
                      is reproducible and needs no network
     data/audio/      the recorded clips and .text_manifest.json, tracked so
@@ -17,7 +17,7 @@ BATCHES = DATA / "batches"
 
 MANUAL_FORMS = DATA / "manual_forms.tsv"
 FORMS_CACHE = DATA / "forms_cache.json"
-THEME_FILE = DATA / "a2_zodziai_v2.txt"
+THEMES_MD = DATA / "THEMES.md"       # the theme taxonomy; column 8 of a row names one
 EXTRA_DEF_VOCAB = DATA / "extra_def_vocab.tsv"
 HUNSPELL = DATA / "hunspell"        # lt_LT.aff + lt_LT.dic, BSD (see COPYING)
 ACCENTED = DATA / "accented.txt"

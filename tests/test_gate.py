@@ -24,7 +24,7 @@ def gate(tmp_path, monkeypatch, no_network, capsys):
     def run(head="kelionė", key=None, **over):
         cols = real_line(head)
         names = ["key", "lt_def", "en_word", "en_def", "lt_example",
-                 "en_example", "pos", "qualifier"]
+                 "en_example", "pos", "theme", "qualifier"]
         cols += [""] * (len(names) - len(cols))
         row = dict(zip(names, cols))
         row.update(over)
@@ -100,6 +100,14 @@ def test_spell_excuses_the_headword_and_listed_proper_nouns(gate, monkeypatch):
 def test_a2_flags_vocabulary_outside_the_list(gate):
     hard, out = gate(lt_example="Mūsų kelionė buvo ekstravagantiška.")
     assert not hard and "A2: off-list vocabulary ['ekstravagantiška']" in out
+
+
+def test_theme_must_be_a_slug_from_the_taxonomy(gate):
+    hard, out = gate(theme="")
+    assert hard and "THEME: no theme" in out
+    hard, out = gate(theme="99-nonsense")
+    assert hard and "THEME: unknown theme '99-nonsense'" in out
+    assert not gate(theme="06-keliones")[0]
 
 
 def test_head_catches_a_mis_parsed_forms_line(gate, monkeypatch):

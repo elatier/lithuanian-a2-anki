@@ -1,6 +1,8 @@
 # Theme taxonomy
 
-Assign every word exactly one of these. Use the tag string verbatim.
+Every card names exactly one of these in column 8 of its row, by the part
+after `::` (`02-pastatai-ir-namai`); the group prefix is added when the
+`tema::` tag is built. The QA gate rejects a row whose slug is not below.
 
 The **twelve `egzaminas::` themes are the exam's own syllabus** — they are the
 twelve topics of the ministry's *A2 kalbos mokėjimo turinio aprašas*
@@ -46,4 +48,4 @@ Rules:
 - Common verbs and adjectives with no situational home go to
   `4-kasdienis-gyvenimas` (verbs of everyday action) or
   `16-spalvos-ir-savybes` (descriptive adjectives).
-- Do not invent tags. Do not leave a word unassigned.
+- Do not invent slugs. Do not leave a row's theme empty.

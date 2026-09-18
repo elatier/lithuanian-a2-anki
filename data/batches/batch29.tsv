@@ -1,21 +1,21 @@
-žibintas	Aukšta lempa lauke; vakare ji šviečia žmonėms.	street lamp	A tall lamp outside; in the evening it shines for people.	Vaikai žaidžia po gatvės žibintu.	The children play under the street lamp.	noun	gatvės
-žibintas#auto	Mašinos šviesa; ji naktį rodo kelią.	headlight	A car light; at night it shows the road.	Mašinos žibintai šviečia į kelią.	Car headlights shine onto the road.	noun	automobilio
-žiedas	Balta dalis, kuria pavasarį pasidengia medžiai; iš jos auga vaisius.	blossom	A white part that trees cover themselves with in spring; from it a fruit grows.	Pavasarį obelis pilna baltų žiedų.	In spring the apple tree is full of white blossoms.	noun	gėlės
-žiedas#ring	Mažas apvalus daiktas; jį nešioja ant piršto.	ring	A small round thing; they wear it on a finger.	Vyras davė jai aukso žiedą.	The man gave her a gold ring.	noun	aukso
-oda	Medžiaga, iš kurios daro batus ir krepšius.	leather	Material from which they make shoes and bags.	Mano batai yra iš odos.	My shoes are of leather.	noun	gyvūno
-oda#skin	Ji yra ant kūno; per ją jaučiame šaltį.	skin	It is on the body; through it we feel the cold.	Oda saulėje greitai nudega.	The skin in the sun quickly burns.	noun	žmogaus
-žalias	Toks, kurio dar niekas nevirė ir nekepė.	raw	Such that nobody has yet boiled or fried it.	Katė valgo žalią žuvį.	The cat eats raw fish.	adj	maistas
-žalias#green	Tokios spalvos kaip žolė ar lapai.	green	Of such colour as grass or leaves.	Ji turi žalias akis.	She has green eyes.	adj	medis
-balandis	Jis ateina po kovo, prieš gegužę.	April	It comes after March, before May.	Mano gimtadienis yra balandžio mėnesį.	My birthday is in April.	noun	mėnuo
-balandis#bird	Pilkas paukštis, kuris gyvena mieste prie žmonių.	pigeon	A grey bird that lives in the city near people.	Vaikai duoda duonos balandžiams.	The children give bread to the pigeons.	noun	miesto
-aštrus	Toks, kuris gerai ir greitai pjauna.	sharp	One that cuts well and fast.	Pjaustau duoną aštriu peiliu.	I cut bread with a sharp knife.	adj	peilis
-aštrus#spicy	Toks, nuo kurio dega burnoje; su pipirais.	spicy	Such that from it the mouth burns; with peppers.	Vaikai nevalgo aštraus maisto.	The children do not eat spicy food.	adj	maistas
-kasa	Mergaitės ją pina ant galvos.	braid	Girls plait it on the head.	Mergaitė turi ilgą kasą.	The girl has a long braid.	noun	plaukų
-kasa#pay	Vieta, kur moki pinigus už maistą ir daiktus.	cash desk	A place where you pay money for food and things.	Prie kasos stovi ilga eilė.	By the cash desk stands a long queue.	noun	parduotuvės
-narys	Kūno vieta, kur ranka ar koja sukasi.	joint	A place of the body where the arm or leg turns.	Žiemą skauda pirštų narius.	In winter the finger joints hurt.	noun	piršto
-narys#member	Vienas žmogus iš grupės ar klubo.	member	One person from a group or club.	Jis tapo mūsų klubo nariu.	He became our club member.	noun	šeimos
-šokti	Kelti kojas ir kūną į viršų nuo žemės.	to jump	To lift the legs and the body upward from the ground.	Vaikai šoka į vandenį.	The children jump into the water.	verb	aukštai
-šokti#dance	Sukti kūną ir kojas pagal muziką.	to dance	To turn the body and the legs to music.	Jie šoko vestuvėse iki ryto.	They danced at the wedding till morning.	verb	vakarėlyje
-besmegenis#snow	Žmogus, kurį vaikai lipdo žiemą lauke.	snowman	A person that children make in winter outside.	Vaikai kieme lipdė didelį besmegenį.	The children in the yard made a big snowman.	noun	sniego
-lipti	Kai popierius yra ant sienos ir nekrenta.	to stick	When paper is on the wall and does not fall.	Popierius limpa prie sienos.	The paper sticks to the wall.	verb	klijais
-lipti#climb	Eiti į viršų — į kalną ar į medį.	to climb	To go upward — up a mountain or up a tree.	Vaikai lipa į kalną.	The children climb up the mountain.	verb	laiptais
+žibintas	Aukšta lempa lauke; vakare ji šviečia žmonėms.	street lamp	A tall lamp outside; in the evening it shines for people.	Vaikai žaidžia po gatvės žibintu.	The children play under the street lamp.	noun	12-paslaugos	gatvės
+žibintas#auto	Mašinos šviesa; ji naktį rodo kelią.	headlight	A car light; at night it shows the road.	Mašinos žibintai šviečia į kelią.	Car headlights shine onto the road.	noun	12-paslaugos	automobilio
+žiedas	Balta dalis, kuria pavasarį pasidengia medžiai; iš jos auga vaisius.	blossom	A white part that trees cover themselves with in spring; from it a fruit grows.	Pavasarį obelis pilna baltų žiedų.	In spring the apple tree is full of white blossoms.	noun	10-prekyba	gėlės
+žiedas#ring	Mažas apvalus daiktas; jį nešioja ant piršto.	ring	A small round thing; they wear it on a finger.	Vyras davė jai aukso žiedą.	The man gave her a gold ring.	noun	10-prekyba	aukso
+oda	Medžiaga, iš kurios daro batus ir krepšius.	leather	Material from which they make shoes and bags.	Mano batai yra iš odos.	My shoes are of leather.	noun	10-prekyba	gyvūno
+oda#skin	Ji yra ant kūno; per ją jaučiame šaltį.	skin	It is on the body; through it we feel the cold.	Oda saulėje greitai nudega.	The skin in the sun quickly burns.	noun	10-prekyba	žmogaus
+žalias	Toks, kurio dar niekas nevirė ir nekepė.	raw	Such that nobody has yet boiled or fried it.	Katė valgo žalią žuvį.	The cat eats raw fish.	adj	11-maistas-ir-gerimai	maistas
+žalias#green	Tokios spalvos kaip žolė ar lapai.	green	Of such colour as grass or leaves.	Ji turi žalias akis.	She has green eyes.	adj	11-maistas-ir-gerimai	medis
+balandis	Jis ateina po kovo, prieš gegužę.	April	It comes after March, before May.	Mano gimtadienis yra balandžio mėnesį.	My birthday is in April.	noun	14-laikas-ir-orai	mėnuo
+balandis#bird	Pilkas paukštis, kuris gyvena mieste prie žmonių.	pigeon	A grey bird that lives in the city near people.	Vaikai duoda duonos balandžiams.	The children give bread to the pigeons.	noun	14-laikas-ir-orai	miesto
+aštrus	Toks, kuris gerai ir greitai pjauna.	sharp	One that cuts well and fast.	Pjaustau duoną aštriu peiliu.	I cut bread with a sharp knife.	adj	16-spalvos-ir-savybes	peilis
+aštrus#spicy	Toks, nuo kurio dega burnoje; su pipirais.	spicy	Such that from it the mouth burns; with peppers.	Vaikai nevalgo aštraus maisto.	The children do not eat spicy food.	adj	16-spalvos-ir-savybes	maistas
+kasa	Mergaitės ją pina ant galvos.	braid	Girls plait it on the head.	Mergaitė turi ilgą kasą.	The girl has a long braid.	noun	06-keliones	plaukų
+kasa#pay	Vieta, kur moki pinigus už maistą ir daiktus.	cash desk	A place where you pay money for food and things.	Prie kasos stovi ilga eilė.	By the cash desk stands a long queue.	noun	06-keliones	parduotuvės
+narys	Kūno vieta, kur ranka ar koja sukasi.	joint	A place of the body where the arm or leg turns.	Žiemą skauda pirštų narius.	In winter the finger joints hurt.	noun	07-santykiai-su-zmonemis	piršto
+narys#member	Vienas žmogus iš grupės ar klubo.	member	One person from a group or club.	Jis tapo mūsų klubo nariu.	He became our club member.	noun	07-santykiai-su-zmonemis	šeimos
+šokti	Kelti kojas ir kūną į viršų nuo žemės.	to jump	To lift the legs and the body upward from the ground.	Vaikai šoka į vandenį.	The children jump into the water.	verb	05-laisvalaikis	aukštai
+šokti#dance	Sukti kūną ir kojas pagal muziką.	to dance	To turn the body and the legs to music.	Jie šoko vestuvėse iki ryto.	They danced at the wedding till morning.	verb	05-laisvalaikis	vakarėlyje
+besmegenis#snow	Žmogus, kurį vaikai lipdo žiemą lauke.	snowman	A person that children make in winter outside.	Vaikai kieme lipdė didelį besmegenį.	The children in the yard made a big snowman.	noun	14-laikas-ir-orai	sniego
+lipti	Kai popierius yra ant sienos ir nekrenta.	to stick	When paper is on the wall and does not fall.	Popierius limpa prie sienos.	The paper sticks to the wall.	verb	04-kasdienis-gyvenimas	klijais
+lipti#climb	Eiti į viršų — į kalną ar į medį.	to climb	To go upward — up a mountain or up a tree.	Vaikai lipa į kalną.	The children climb up the mountain.	verb	04-kasdienis-gyvenimas	laiptais

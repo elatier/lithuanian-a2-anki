@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """build_cache.py START END — warm forms_cache.json for a slice of the
-word list, so a later build or gate run needs no network for those words.
+deck's headwords, so a later gate run needs no network for those words.
 
     python3 scripts/build_cache.py 0 200
 """
@@ -10,9 +10,8 @@ import concurrent.futures as cf
 import ltcard
 import paths
 
-words = [w.split("\t")[0] for w in
-         open(paths.THEME_FILE, encoding="utf-8").read().splitlines()
-         if w and not w.startswith("#")]
+words = sorted({key.split("#")[0] for f in paths.batch_files()
+                for key in ltcard.load_defs(str(f))})
 cache = json.load(open(paths.FORMS_CACHE)) if paths.FORMS_CACHE.exists() else {}
 todo = [w for w in words if w not in cache]
 start, end = int(sys.argv[1]), int(sys.argv[2])

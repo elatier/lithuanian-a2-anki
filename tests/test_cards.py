@@ -124,14 +124,28 @@ def test_pronoun_table_pairs_the_confusable_column(no_network):
 
 def test_load_defs_splits_sense_keys_and_reads_the_qualifier(tmp_path):
     f = tmp_path / "b.tsv"
-    f.write_text("žibintas#auto\tdef\theadlight\ten def\tpvz\tex\tnoun\tautomobilio\n"
-                 "# comment\n\nnamas\tdef\thouse\ten def\tpvz\tex\tnoun\n",
-                 encoding="utf-8")
+    f.write_text("žibintas#auto\tdef\theadlight\ten def\tpvz\tex\tnoun"
+                 "\t02-pastatai-ir-namai\tautomobilio\n"
+                 "# comment\n\nnamas\tdef\thouse\ten def\tpvz\tex\tnoun"
+                 "\t02-pastatai-ir-namai\n", encoding="utf-8")
     defs = ltcard.load_defs(str(f))
     assert set(defs) == {"žibintas#auto", "namas"}
     assert defs["žibintas#auto"]["headword"] == "žibintas"
     assert defs["žibintas#auto"]["qualifier"] == "automobilio"
+    assert defs["žibintas#auto"]["theme"] == "02-pastatai-ir-namai"
     assert defs["namas"]["qualifier"] == "" and defs["namas"]["pos"] == "noun"
+
+
+def test_themes_come_from_the_rows_and_the_taxonomy(no_network):
+    tags = ltcard.theme_tags()
+    assert tags["02-pastatai-ir-namai"] == "egzaminas::02-pastatai-ir-namai"
+    assert len(tags) == 18
+    assert ltcard.resolve_theme("02") == "02-pastatai-ir-namai"
+    assert ltcard.resolve_theme("pastatai") == "02-pastatai-ir-namai"
+    assert ltcard.resolve_theme("egzaminas::06-keliones") == "06-keliones"
+    with pytest.raises(LookupError, match="matches 0"):
+        ltcard.resolve_theme("99")
+    assert ltcard.load_themes()["kelionė"] == "egzaminas::06-keliones"
 
 
 def test_display_word_shows_the_qualifier_in_lighter_type():

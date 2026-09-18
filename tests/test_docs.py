@@ -17,12 +17,12 @@ def n(x):
     return f"{x:,}"
 
 
-def test_every_theme_entry_has_a_card_and_every_card_a_theme():
-    themes = set(ltcard.load_themes())
-    heads = {key.split("#")[0] for f in paths.batch_files()
-             for key in ltcard.load_defs(str(f))}
-    assert heads - themes == set(), "cards with no theme (tagged be-temos)"
-    assert themes - heads == set(), "theme-list entries with no card"
+def test_every_row_names_a_theme_from_the_taxonomy():
+    tags = ltcard.theme_tags()
+    bad = [(f.name, key) for f in paths.batch_files()
+           for key, d in ltcard.load_defs(str(f)).items()
+           if d["theme"] not in tags]
+    assert bad == []
 
 
 def test_readme_numbers():

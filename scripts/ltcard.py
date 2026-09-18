@@ -809,33 +809,55 @@ def load_gloss_overrides(path=None):
     return out
 
 
-# The word list lives in data/. It used to be referenced by an absolute path
-# that existed only on the machine the deck was first built on; everywhere
-# else load_themes() silently returned {} and every note was tagged
-# tema::be-temos.
-THEME_FILE = paths.THEME_FILE
+@functools.lru_cache(maxsize=1)
+def theme_table():
+    """[(full tag, what it covers)] from data/THEMES.md, in its order:
+    ("egzaminas::02-pastatai-ir-namai", "home, rooms, furniture, ...")."""
+    text = paths.THEMES_MD.read_text(encoding="utf-8")
+    return re.findall(r"^\| `([a-z]+::\d\d-[a-z-]+)` \| (.+?) \|$", text, re.M)
 
 
-@functools.lru_cache(maxsize=8)
-def load_themes(path=None):
-    themes, cur = {}, "be-temos"
-    p = Path(path) if path else THEME_FILE
-    if not p.exists():
-        return themes
-    for line in p.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line.startswith("#"):
-            cur = line.lstrip("# ").split()[0]
-        elif line:
-            themes[line.split("\t")[0]] = cur
+def theme_tags():
+    """{slug as written in column 8: full tag}, e.g.
+    {"02-pastatai-ir-namai": "egzaminas::02-pastatai-ir-namai"}."""
+    return {tag.split("::", 1)[1]: tag for tag, _ in theme_table()}
+
+
+def resolve_theme(slug):
+    """The column-8 slug for a full or partial name: "02-pastatai-ir-namai",
+    "egzaminas::02-pastatai-ir-namai", "02" and "pastatai" all resolve to
+    "02-pastatai-ir-namai". Raises LookupError listing the choices."""
+    tags = theme_tags()
+    hits = [leaf for leaf, tag in tags.items()
+            if slug in (leaf, tag) or leaf.startswith(slug) or slug in leaf]
+    if len(hits) != 1:
+        raise LookupError(f"theme {slug!r} matches {len(hits)} of:\n  "
+                          + "\n  ".join(tags))
+    return hits[0]
+
+
+@functools.lru_cache(maxsize=1)
+def load_themes():
+    """{headword: full theme tag} from column 8 of every batch row. A word
+    whose slug is not in THEMES.md keeps the slug as written, so the gate
+    can name it; a word with no theme is absent, and the note is tagged
+    tema::be-temos."""
+    tags, themes = theme_tags(), {}
+    for f in paths.batch_files():
+        for key, d in load_defs(str(f)).items():
+            if d["theme"]:
+                themes.setdefault(key.split("#")[0], tags.get(d["theme"], d["theme"]))
     return themes
 
 
 def load_defs(path):
-    """Load a defs TSV.
+    """Load a batch TSV.
 
     Columns: key, lt_def, en_word, en_def, lt_example, en_example, pos,
-             [qualifier]
+             theme, [qualifier]
+
+    `theme` is a slug from data/THEMES.md without its group prefix
+    (`02-pastatai-ir-namai`); it becomes the note's tema:: tag.
 
     `key` is normally just the headword. A word with two teachable senses gets
     one row per sense, keyed `headword#tag` (e.g. `žibintas#auto`), with the
@@ -850,10 +872,11 @@ def load_defs(path):
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip() or line.startswith("#"):
             continue
-        p = (line.split("\t") + [""] * 8)[:8]
+        p = (line.split("\t") + [""] * 9)[:9]
         key = p[0].strip().lower()
         defs[key] = dict(
-            headword=key.split("#")[0], qualifier=p[7].strip(),
+            headword=key.split("#")[0], theme=p[7].strip(),
+            qualifier=p[8].strip(),
             lt_def=p[1].strip(), en_word=p[2].strip(), en_def=p[3].strip(),
             lt_example=p[4].strip(), en_example=p[5].strip(),
             pos=p[6].strip())

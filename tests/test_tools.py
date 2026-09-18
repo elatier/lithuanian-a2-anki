@@ -87,16 +87,16 @@ def test_add_word_records_new_card_then_only_edits(monkeypatch, one_batch,
                                                    no_network):
     f, row, spoken = one_batch
     f.write_text("\t".join(row) + "\n", encoding="utf-8")
-    assert run_add_word(monkeypatch, "slėnis") == 0
+    assert run_add_word(monkeypatch, "slėnis", "--no-build") == 0
     assert len(spoken) == 4
 
     spoken.clear()
-    assert run_add_word(monkeypatch, "slėnis") == 0
+    assert run_add_word(monkeypatch, "slėnis", "--no-build") == 0
     assert spoken == []                             # nothing changed
 
     row[4] = "Mūsų kaimas yra slėnyje."             # edit the example
     f.write_text("\t".join(row) + "\n", encoding="utf-8")
-    assert run_add_word(monkeypatch, "slėnis") == 0
+    assert run_add_word(monkeypatch, "slėnis", "--no-build") == 0
     assert spoken == ["Mūsų kaimas yra slėnyje."]
 
 
