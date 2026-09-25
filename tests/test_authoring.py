@@ -120,10 +120,12 @@ def test_packet_for_an_unknown_word_lists_the_themes(monkeypatch, capsys,
 def test_rewrite_restores_stale_numbers():
     readme = (paths.ROOT / "README.md").read_text(encoding="utf-8")
     f = update_numbers.facts()
-    stale = readme.replace("1,593", "1,500").replace("| 01 | Asmens tapatybė | 128 |",
-                                                     "| 01 | Asmens tapatybė | 1 |")
-    assert stale != readme
-    assert update_numbers.rewrite(stale, {1500: 1593}, f["per_theme"]) == readme
+    # the current numbers, so the test does not break when a batch changes them
+    words, theme01 = update_numbers.n(f["notes"]), f["per_theme"][1]
+    stale = readme.replace(words, "1,500").replace(
+        f"| 01 | Asmens tapatybė | {theme01} |", "| 01 | Asmens tapatybė | 1 |")
+    assert "1,500" in stale and "| Asmens tapatybė | 1 |" in stale
+    assert update_numbers.rewrite(stale, {1500: f["notes"]}, f["per_theme"]) == readme
 
 
 def test_rewrite_leaves_other_numbers_alone():

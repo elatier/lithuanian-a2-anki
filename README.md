@@ -1,6 +1,6 @@
 # Lithuanian A2 — Anki deck
 
-**1,596 Lithuanian words for the A2 state language exam**, with audio, stress
+**1,605 Lithuanian words for the A2 state language exam**, with audio, stress
 marks (kirtis) and Lithuanian-language definitions.
 
 📄 **[Deck page](https://elatier.github.io/lithuanian-a2-anki/)** ·
@@ -8,11 +8,11 @@ marks (kirtis) and Lithuanian-language definitions.
 
 | | |
 |---|---|
-| Words | 1,596 |
-| Cards | 3,192 (two per word) |
-| Recordings | 6,384 |
+| Words | 1,605 |
+| Cards | 3,210 (two per word) |
+| Recordings | 6,420 |
 | Themes | 18 — the ministry's twelve A2 topics, plus six more |
-| Hand-checked paradigms | 469 |
+| Hand-checked paradigms | 475 |
 
 ## Two cards per word
 
@@ -28,7 +28,7 @@ marks (kirtis) and Lithuanian-language definitions.
 - **Audio on everything** — headword, inflected forms, Lithuanian definition,
   example sentence. Four recordings per word.
 - **Stress marks** on headwords *and* on the inflected forms shown.
-- **Inflected forms** on every card: nouns with the genitive, verbs with 3rd
+- **Inflected forms** on every card: nouns with the plural, verbs with 3rd
   person present and past, adjectives with the feminine.
 - **Voiced case tables** for personal pronouns and demonstratives, including the
   feminine column (`jie | jos`, `tie | tos`, `šie | šios`).
@@ -54,14 +54,14 @@ that description does not name.
 
 | # | Theme | Words | | # | Theme | Words |
 |---|---|---|---|---|---|---|
-| 01 | Asmens tapatybė | 128 | | 10 | Prekyba | 114 |
-| 02 | Pastatai ir namai | 101 | | 11 | Maistas ir gėrimai | 121 |
-| 03 | Gamta, regionas | 108 | | 12 | Paslaugos | 43 |
+| 01 | Asmens tapatybė | 130 | | 10 | Prekyba | 114 |
+| 02 | Pastatai ir namai | 102 | | 11 | Maistas ir gėrimai | 121 |
+| 03 | Gamta, regionas | 109 | | 12 | Paslaugos | 43 |
 | 04 | Kasdienis gyvenimas | 118 | | 13 | Darbas ir profesijos | 27 |
-| 05 | Laisvalaikis | 124 | | 14 | Laikas ir orai | 59 |
-| 06 | Kelionės | 103 | | 15 | Skaičiai ir įvardžiai | 89 |
+| 05 | Laisvalaikis | 124 | | 14 | Laikas ir orai | 60 |
+| 06 | Kelionės | 104 | | 15 | Skaičiai ir įvardžiai | 90 |
 | 07 | Santykiai su žmonėmis | 134 | | 16 | Spalvos ir savybės | 83 |
-| 08 | Sveikata ir higiena | 128 | | 17 | Valstybė ir visuomenė | 31 |
+| 08 | Sveikata ir higiena | 130 | | 17 | Valstybė ir visuomenė | 31 |
 | 09 | Švietimas ir mokslas | 56 | | 18 | Kalba ir gramatika | 29 |
 
 ## How it was made
@@ -108,7 +108,7 @@ No local setup at all: open the repo in a GitHub Codespace. The
 `.devcontainer/` gives you Python, hunspell, the dictionary and the Claude
 Code CLI in the browser.
 
-The 6,384 recordings (~115 MB) come with the clone, in `data/audio/`. Only
+The 6,420 recordings (~115 MB) come with the clone, in `data/audio/`. Only
 the clips for words you add or edit are ever recorded, and you commit them
 with the card. If you only want to build, `git clone --depth 1` skips the
 history and keeps the download small.
@@ -168,7 +168,7 @@ each gate code means are all in the guide.
 That builds, checks that the docs quote the current numbers, tags, and
 pushes. The release workflow then builds the deck offline from the tag and
 attaches the `.apkg` to a GitHub release titled from the data (`Lietuvių
-A2 — 1,596 words`), which is what the download links point at. Without GitHub Actions, upload the local build instead:
+A2 — 1,605 words`), which is what the download links point at. Without GitHub Actions, upload the local build instead:
 `gh release create v1.1.0 decks/lietuviu_A2.apkg`.
 
 The AnkiWeb listing is updated by importing the new build into Anki
@@ -263,8 +263,8 @@ All in `data/`.
 
 | | |
 |---|---|
-| `batches/batch*.tsv` | the 1,596 cards |
-| `manual_forms.tsv` | 469 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
+| `batches/batch*.tsv` | the 1,605 cards |
+| `manual_forms.tsv` | 475 hand-written, hunspell-verified paradigms for words Wiktionary has no table for |
 | `THEMES.md` | the theme taxonomy; column 8 of every row names one of its slugs |
 | `DRAFTING_GUIDE.md` | how to write a card: register, rules, two-sense words |
 | `forms_cache.json` | Wiktionary paradigms fetched for the original A2 word list; the gate counts them as known vocabulary |

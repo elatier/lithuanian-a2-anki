@@ -9,11 +9,11 @@ twelve topics of the ministry's *A2 kalbos mokėjimo turinio aprašas*
 (smsm.lrv.lt), in its order: Asmens tapatybė · Būstas · Gamta, regionas ·
 Kasdienis gyvenimas · Laisvalaikis · Kelionės · Santykiai su žmonėmis ·
 Sveikata ir higiena · Švietimas ir mokslas · Prekyba · Maistas ir gėrimai ·
-Paslaugos. They hold 1,278 of the 1,596 words.
+Paslaugos. They hold 1,285 of the 1,605 words.
 
 The six **`papildoma::` themes** were added by this deck because the catch-all
 bucket needed splitting; they have no counterpart in that description. They
-hold the remaining 318.
+hold the remaining 320.
 
 Numbers are zero-padded so a theme list sorts 01, 02 … 10, not 1, 10, 11, 2.
 In Anki the tags nest, and `Egzamino temos` sorts above `Papildomos temos`.

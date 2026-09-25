@@ -1,6 +1,6 @@
 # AnkiWeb "Share Deck" — fields ready to paste
 
-Deck as it stands: **1,596 notes / 3,192 cards**, 18 theme subdecks
+Deck as it stands: **1,605 notes / 3,210 cards**, 18 theme subdecks
 (`Egzamino temos` 01–12 = the ministry's A2 topics, `Papildomos temos` 13–18),
 LIEPA audio on headword, forms, definition and example.
 
@@ -9,7 +9,7 @@ LIEPA audio on headword, forms, definition and example.
 ## Title (limit 60 characters)
 
 ```
-Lithuanian A2 — 1,596 words, audio, LT definitions
+Lithuanian A2 — 1,605 words, audio, LT definitions
 ```
 50 characters.
 
@@ -17,9 +17,9 @@ Alternatives, all under 60:
 
 | chars | title |
 |---|---|
-| 54 | `Lithuanian A2 — 1,596 words, TTS audio, LT definitions` |
-| 59 | `Lithuanian A2 — 1,596 words, audio, monolingual definitions` |
-| 50 | `Lietuvių kalba A2 — 1,596 words with audio (LT/EN)` |
+| 54 | `Lithuanian A2 — 1,605 words, TTS audio, LT definitions` |
+| 59 | `Lithuanian A2 — 1,605 words, audio, monolingual definitions` |
+| 50 | `Lietuvių kalba A2 — 1,605 words with audio (LT/EN)` |
 
 Put "Lithuanian" first — AnkiWeb's deck search is a plain title/description
 match, and almost nobody searches "lietuvių".
@@ -76,6 +76,6 @@ audio question rather than merely evidence it, the terms list
 
 ## Size
 
-The built deck is **116 MB** (115,970,047 bytes), verified: 1,596 notes,
-3,192 cards, 6,384 media files, Charter styling present. Under the 250 MB the
+The built deck is **116 MB** (115,970,047 bytes), verified: 1,605 notes,
+3,210 cards, 6,420 media files, Charter styling present. Under the 250 MB the
 Share form states.
