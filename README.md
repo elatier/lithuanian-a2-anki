@@ -3,7 +3,7 @@
 **1,605 Lithuanian words for the A2 state language exam**, with audio, stress
 marks (kirtis) and Lithuanian-language definitions.
 
-📄 **[Deck page](https://elatier.github.io/lithuanian-a2-anki/)** ·
+📄 **[Deck page](https://anki.valdas.uk/)** ·
 ⬇️ **[Download the .apkg](https://github.com/elatier/lithuanian-a2-anki/releases/latest)**
 
 | | |
