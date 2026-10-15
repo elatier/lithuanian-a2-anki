@@ -7,7 +7,7 @@ Lithuanian words for the A2 state language exam, with audio, stress marks
   your browser, no account needed.
 - 📄 **[Deck page](https://anki.valdas.uk/)**: what is on the cards, and
   what's new.
-- ✏️ **[Report a mistake](https://github.com/elatier/lithuanian-a2-anki/issues/new?template=correction.yml)**
+- ✏️ **[Report a mistake](https://github.com/elatier/lithuanian-deck/issues/new?template=correction.yml)**
   with the word and what is wrong. Fixes go into the next version.
 
 This repository holds the deck page (`docs/`, served at anki.valdas.uk) and
