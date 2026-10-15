@@ -1,21 +1,20 @@
-# Lithuanian A2 — Anki deck
+# Lithuanian A2
 
 Lithuanian words for the A2 state language exam, with audio, stress marks
 (kirtis) and Lithuanian-language definitions.
 
-📄 **[Deck page](https://anki.valdas.uk/)** — what is on the cards, what's
-new, and everything below.
-
-- ⬇️ **[Download the latest `.apkg`](https://github.com/elatier/lithuanian-a2-anki/releases/latest/download/lietuviu_A2.apkg)**
-  and open it with Anki, or use **File → Import**. Earlier versions are on
-  the [releases page](https://github.com/elatier/lithuanian-a2-anki/releases).
+- 🧭 **[Study it in Gintaro kelias](https://kelias.valdas.uk/)**: free, in
+  your browser, no account needed.
+- 📄 **[Deck page](https://anki.valdas.uk/)**: what is on the cards, and
+  what's new.
 - ✏️ **[Report a mistake](https://github.com/elatier/lithuanian-a2-anki/issues/new?template=correction.yml)**
   with the word and what is wrong. Fixes go into the next version.
 
-This repository holds the deck page (`docs/`, served at anki.valdas.uk), the
-releases and the corrections. The scripts and data that build the deck are
-in a private repository, and everything here is copied from it at each
-release, so a pull request here would be overwritten: open an issue instead.
+This repository holds the deck page (`docs/`, served at anki.valdas.uk) and
+the corrections. The deck is not available as a download. The scripts and
+data that build it are in a private repository, and everything here is
+copied from it, so a pull request here would be overwritten: open an issue
+instead.
 
 ## Credits and reuse
 
