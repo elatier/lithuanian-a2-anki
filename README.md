@@ -1,4 +1,4 @@
-# Lithuanian A2
+# Lithuanian Deck
 
 Lithuanian words for the A2 state language exam, with audio, stress marks
 (kirtis) and Lithuanian-language definitions.
